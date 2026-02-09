@@ -4,6 +4,9 @@ openai-whisper
 librosa
 pydub
 praat-parselmouth
+webrtcvad
+speechbrain
+pyworld
 sqlalchemy
 databases
 passlib[bcrypt]
