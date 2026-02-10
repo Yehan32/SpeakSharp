@@ -10,13 +10,13 @@ import asyncio
 from contextlib import asynccontextmanager
 
 # Import services
-from services.speech_service import SpeechAnalysisService
-from services.audio_service import AudioProcessingService
-from services.storage_service import StorageService
-from services.auth_service import AuthService
-from config.settings import Settings
-from utils.logger import setup_logger
-from utils.exceptions import VocalLabsException, AudioProcessingError, AnalysisError
+from app.services.speech_service import SpeechAnalysisService
+from app.services.audio_service import AudioProcessingService
+from app.services.storage_service import StorageService
+from app.services.auth_service import AuthService
+from app.config.settings import Settings
+from app.utils.logger import setup_logger
+from app.utils.exceptions import VocalLabsException, AudioProcessingError, AnalysisError
 
 # Setup
 settings = Settings()
