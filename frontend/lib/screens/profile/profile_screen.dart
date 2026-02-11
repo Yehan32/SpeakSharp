@@ -1,88 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
+import 'package:Speak_Sharp/services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenUpdatedState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  Map<String, dynamic>? _stats;
+class _ProfileScreenUpdatedState extends State<ProfileScreen> {
   bool _isLoadingStats = true;
+  Map<String, dynamic>? _stats;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _loadStatistics();
   }
 
-  Future<void> _loadStats() async {
+  Future<void> _loadStatistics() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    setState(() => _isLoadingStats = true);
+
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('speeches')
-          .where('user_id', isEqualTo: user.uid)
-          .get();
-
-      if (!mounted) return;
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _stats = {
-            'total_speeches': 0,
-            'average_score': 0.0,
-            'best_score': 0.0,
-            'total_duration': 0,
-          };
-          _isLoadingStats = false;
-        });
-        return;
-      }
-
-      double totalScore = 0;
-      double bestScore = 0;
-      int totalDuration = 0;
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final score = (data['overall_score'] ?? 0.0) as double;
-        totalScore += score;
-        if (score > bestScore) bestScore = score;
-
-        final duration = data['duration'] as Map<String, dynamic>?;
-        if (duration != null && duration['seconds'] != null) {
-          totalDuration += (duration['seconds'] as num).toInt();
-        }
-      }
-
+      final stats = await ApiService.getUserStatistics(userId: user.uid);
       setState(() {
-        _stats = {
-          'total_speeches': snapshot.docs.length,
-          'average_score': totalScore / snapshot.docs.length,
-          'best_score': bestScore,
-          'total_duration': totalDuration,
-        };
+        _stats = stats;
         _isLoadingStats = false;
       });
     } catch (e) {
+      setState(() => _isLoadingStats = false);
       debugPrint('Error loading stats: $e');
-      if (mounted) {
-        setState(() {
-          _stats = {
-            'total_speeches': 0,
-            'average_score': 0.0,
-            'best_score': 0.0,
-            'total_duration': 0,
-          };
-          _isLoadingStats = false;
-        });
-      }
     }
   }
 
@@ -90,64 +42,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.person_off_outlined,
-                size: 80,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Not Logged In',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please log in to view your profile',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pushReplacementNamed('/auth/login');
-                },
-                child: const Text('Login'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
+        title: const Text(
           'Profile',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white),
         ),
       ),
       body: SingleChildScrollView(
@@ -162,8 +64,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.accentColor,
+                    AppTheme.primaryColor.withOpacity(0.8),
+                    AppTheme.primaryColor.withOpacity(0.6),
                   ],
                 ),
               ),
@@ -178,18 +80,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
                     child: Center(
                       child: Text(
-                        _getInitials(user),
+                        _getInitials(user!),
                         style: TextStyle(
                           color: AppTheme.primaryColor,
-                          fontSize: 40,
+                          fontSize: 36,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -263,33 +165,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Icons.history,
                     'Speech History',
                     'View all your past speeches',
-                        () {
-                      Navigator.of(context).pushNamed('/history');
-                    },
+                        () => Navigator.pushNamed(context, '/history'),
+                  ),
+                  _buildMenuItem(
+                    Icons.trending_up,
+                    'Progress Dashboard',
+                    'Track your improvement',
+                        () => Navigator.pushNamed(context, '/progress'),
                   ),
                   _buildMenuItem(
                     Icons.settings_outlined,
                     'Settings',
                     'App preferences and account',
-                        () {
-                      _showComingSoon(context, 'Settings');
-                    },
+                        () => Navigator.pushNamed(context, '/settings'),
                   ),
                   _buildMenuItem(
                     Icons.help_outline,
                     'Help & Support',
                     'Get help and FAQs',
-                        () {
-                      _showComingSoon(context, 'Help & Support');
-                    },
+                        () => _showComingSoon(context, 'Help & Support'),
                   ),
                   _buildMenuItem(
                     Icons.info_outline,
                     'About',
                     'App version and info',
-                        () {
-                      _showAboutDialog(context);
-                    },
+                        () => _showAboutDialog(context),
                   ),
                 ],
               ),
@@ -310,29 +210,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  String _getInitials(User user) {
-    if (user.displayName != null && user.displayName!.isNotEmpty) {
-      final parts = user.displayName!.split(' ');
-      if (parts.length >= 2) {
-        return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-      }
-      return user.displayName![0].toUpperCase();
-    }
-    return user.email![0].toUpperCase();
-  }
-
-  String _getJoinDate(User user) {
-    if (user.metadata.creationTime != null) {
-      final date = user.metadata.creationTime!;
-      final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      return '${months[date.month - 1]} ${date.year}';
-    }
-    return 'Recently';
-  }
-
   Widget _buildStatistics() {
     if (_isLoadingStats) {
       return Container(
@@ -350,8 +227,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final totalSpeeches = _stats!['total_speeches'] as int;
-    final avgScore = _stats!['average_score'] as double;
-    final bestScore = _stats!['best_score'] as double;
+    final avgScore = (_stats!['average_score'] as num).toDouble();
+    final bestScore = (_stats!['best_score'] as num).toDouble();
     final totalDuration = _stats!['total_duration'] as int;
 
     return Container(
@@ -362,30 +239,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Your Statistics',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
+                child: _buildStatItem(
                   Icons.mic,
                   totalSpeeches.toString(),
                   'Speeches',
                   Colors.blue,
                 ),
               ),
-              const SizedBox(width: 12),
+              Container(
+                width: 1,
+                height: 60,
+                color: Colors.grey[300],
+              ),
               Expanded(
-                child: _buildStatCard(
+                child: _buildStatItem(
                   Icons.star,
                   avgScore.toStringAsFixed(1),
                   'Avg Score',
@@ -394,22 +265,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          Divider(color: Colors.grey[300]),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
+                child: _buildStatItem(
                   Icons.emoji_events,
                   bestScore.toStringAsFixed(1),
                   'Best Score',
                   Colors.green,
                 ),
               ),
-              const SizedBox(width: 12),
+              Container(
+                width: 1,
+                height: 60,
+                color: Colors.grey[300],
+              ),
               Expanded(
-                child: _buildStatCard(
+                child: _buildStatItem(
                   Icons.access_time,
-                  '${(totalDuration ~/ 60)}m',
+                  _formatDuration(totalDuration),
                   'Total Time',
                   Colors.purple,
                 ),
@@ -421,37 +298,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatCard(IconData icon, String value, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildStatItem(
+      IconData icon,
+      String value,
+      String label,
+      Color color,
+      ) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 32),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -461,66 +334,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
       String subtitle,
       VoidCallback onTap,
       ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.grey[700], size: 24),
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  child: Icon(
-                    icon,
-                    color: AppTheme.primaryColor,
-                    size: 22,
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.grey[400],
-                  size: 16,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+          ],
         ),
       ),
     );
@@ -530,11 +389,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () => _confirmLogout(context),
+        onPressed: _handleLogout,
         icon: const Icon(Icons.logout),
         label: const Text('Logout'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red[600],
+          backgroundColor: Colors.red,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -545,7 +404,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _confirmLogout(BuildContext context) async {
+  Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -558,9 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Logout'),
           ),
         ],
@@ -569,9 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (shouldLogout == true) {
       await FirebaseAuth.instance.signOut();
-
       if (!mounted) return;
-
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/auth/login',
             (route) => false,
@@ -599,7 +454,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('About Speak Sharp'),
+        title: const Text('About SpeakSharp'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,16 +465,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Speak Sharp helps you improve your public speaking skills with AI-powered analysis and feedback.',
+              'SpeakSharp helps you improve your public speaking skills with AI-powered analysis and feedback.',
               style: TextStyle(color: Colors.grey[700]),
             ),
             const SizedBox(height: 16),
             Text(
-              '© 2025 Speak Sharp',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              '© 2025 SpeakSharp',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -631,5 +483,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  String _getInitials(User user) {
+    if (user.displayName != null && user.displayName!.isNotEmpty) {
+      final parts = user.displayName!.split(' ');
+      if (parts.length >= 2) {
+        return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      }
+      return user.displayName![0].toUpperCase();
+    }
+    return user.email![0].toUpperCase();
+  }
+
+  String _getJoinDate(User user) {
+    if (user.metadata.creationTime != null) {
+      final date = user.metadata.creationTime!;
+      final months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return '${months[date.month - 1]} ${date.year}';
+    }
+    return 'Recently';
+  }
+
+  String _formatDuration(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (minutes > 0) {
+      return '${minutes}m';
+    } else {
+      return '${seconds}s';
+    }
   }
 }

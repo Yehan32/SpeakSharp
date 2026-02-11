@@ -1,51 +1,250 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
-import 'package:Speak_Sharp/widgets/card_layout.dart';
-import '../analysis/advanced_analysis_screen.dart';
+import 'package:Speak_Sharp/services/api_service.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({Key? key}) : super(key: key);
+  const HistoryScreen({super.key});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  String _searchQuery = '';
-  String _sortBy = 'date'; // 'date' or 'score'
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _allSpeeches = [];
+  List<Map<String, dynamic>> _filteredSpeeches = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _sortBy = 'newest'; // newest, oldest, highest, lowest
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+    _searchController.addListener(_filterSpeeches);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final history = await ApiService.getUserHistory(
+        userId: user.uid,
+        limit: 100,
+      );
+      setState(() {
+        _allSpeeches = history;
+        _filteredSpeeches = history;
+        _isLoading = false;
+        _applySorting();
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('Failed to load history: $e');
+    }
+  }
+
+  void _filterSpeeches() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredSpeeches = List.from(_allSpeeches);
+      } else {
+        _filteredSpeeches = _allSpeeches.where((speech) {
+          final topic = (speech['topic'] ?? '').toString().toLowerCase();
+          return topic.contains(query);
+        }).toList();
+      }
+      _applySorting();
+    });
+  }
+
+  void _applySorting() {
+    switch (_sortBy) {
+      case 'newest':
+        _filteredSpeeches.sort((a, b) {
+          final aTime = _parseTimestamp(a['timestamp']);
+          final bTime = _parseTimestamp(b['timestamp']);
+          return bTime.compareTo(aTime);
+        });
+        break;
+      case 'oldest':
+        _filteredSpeeches.sort((a, b) {
+          final aTime = _parseTimestamp(a['timestamp']);
+          final bTime = _parseTimestamp(b['timestamp']);
+          return aTime.compareTo(bTime);
+        });
+        break;
+      case 'highest':
+        _filteredSpeeches.sort((a, b) {
+          final aScore = (a['overall_score'] ?? 0).toDouble();
+          final bScore = (b['overall_score'] ?? 0).toDouble();
+          return bScore.compareTo(aScore);
+        });
+        break;
+      case 'lowest':
+        _filteredSpeeches.sort((a, b) {
+          final aScore = (a['overall_score'] ?? 0).toDouble();
+          final bScore = (b['overall_score'] ?? 0).toDouble();
+          return aScore.compareTo(bScore);
+        });
+        break;
+    }
+  }
+
+  DateTime _parseTimestamp(dynamic timestamp) {
+    try {
+      if (timestamp is String) {
+        return DateTime.parse(timestamp);
+      }
+      return DateTime.now();
+    } catch (e) {
+      return DateTime.now();
+    }
+  }
+
+  Future<void> _deleteAnalysis(String analysisId, int index) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cardColor,
+        title: const Text(
+          'Delete Speech?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'This action cannot be undone.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await ApiService.deleteAnalysis(
+        analysisId: analysisId,
+        userId: user.uid,
+      );
+
+      setState(() {
+        _allSpeeches.removeAt(index);
+        _filteredSpeeches = List.from(_allSpeeches);
+        _filterSpeeches();
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Speech deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      _showError('Failed to delete speech: $e');
+    }
+  }
+
+  void _showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white30,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Sort By',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildSortOption('Newest First', 'newest'),
+            _buildSortOption('Oldest First', 'oldest'),
+            _buildSortOption('Highest Score', 'highest'),
+            _buildSortOption('Lowest Score', 'lowest'),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortOption(String label, String value) {
+    final isSelected = _sortBy == value;
+    return ListTile(
+      leading: Icon(
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: isSelected ? AppTheme.primaryColor : Colors.white54,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? AppTheme.primaryColor : Colors.white,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      onTap: () {
+        setState(() {
+          _sortBy = value;
+          _applySorting();
+        });
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.login,
-                size: 64,
-                color: Colors.white38,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Please log in to view history',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -56,43 +255,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
           style: TextStyle(color: Colors.white),
         ),
         actions: [
-          PopupMenuButton<String>(
+          IconButton(
             icon: const Icon(Icons.sort, color: Colors.white),
-            onSelected: (value) {
-              setState(() {
-                _sortBy = value;
-              });
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'date',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 20,
-                      color: _sortBy == 'date' ? AppTheme.primaryColor : Colors.grey,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('Sort by Date'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'score',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.star,
-                      size: 20,
-                      color: _sortBy == 'score' ? AppTheme.primaryColor : Colors.grey,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('Sort by Score'),
-                  ],
-                ),
-              ),
-            ],
+            onPressed: _showSortOptions,
           ),
         ],
       ),
@@ -100,157 +265,71 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           // Search Bar
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16.0),
             child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              },
+              controller: _searchController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Search speeches...',
-                hintStyle: const TextStyle(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54),
                 filled: true,
                 fillColor: AppTheme.cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear, color: Colors.white54),
+                  onPressed: () {
+                    _searchController.clear();
+                    _filterSpeeches();
+                  },
+                )
+                    : null,
               ),
             ),
           ),
 
-          // Speech List
+          // Results Count
+          if (_filteredSpeeches.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    '${_filteredSpeeches.length} speech${_filteredSpeeches.length == 1 ? '' : 'es'}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 8),
+
+          // Speeches List
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('speeches')
-                  .where('user_id', isEqualTo: user.uid)
-                  .orderBy(
-                _sortBy == 'date' ? 'timestamp' : 'overall_score',
-                descending: true,
-              )
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryColor,
-                    ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredSpeeches.isEmpty
+                ? _buildEmptyState()
+                : RefreshIndicator(
+              onRefresh: _loadHistory,
+              color: AppTheme.primaryColor,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _filteredSpeeches.length,
+                itemBuilder: (context, index) {
+                  return _buildSpeechCard(
+                    _filteredSpeeches[index],
+                    index,
                   );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red[300],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error loading history',
-                          style: TextStyle(
-                            color: Colors.red[300],
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snapshot.error.toString(),
-                          style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.history,
-                          size: 64,
-                          color: Colors.white38,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No speeches yet',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Record your first speech to see it here',
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                // Filter speeches by search query
-                final speeches = snapshot.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final topic = (data['topic'] ?? '').toString().toLowerCase();
-                  return topic.contains(_searchQuery);
-                }).toList();
-
-                if (speeches.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search_off,
-                          size: 64,
-                          color: Colors.white38,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No matches found',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: speeches.length,
-                  itemBuilder: (context, index) {
-                    final doc = speeches[index];
-                    final data = doc.data() as Map<String, dynamic>;
-
-                    return _buildSpeechCard(context, doc.id, data);
-                  },
-                );
-              },
+                },
+              ),
             ),
           ),
         ],
@@ -258,32 +337,120 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildSpeechCard(BuildContext context, String docId, Map<String, dynamic> data) {
-    final topic = data['topic'] ?? 'Untitled Speech';
-    final score = (data['overall_score'] ?? 0.0).toDouble();
-    final timestamp = data['timestamp'] as Timestamp?;
-    final duration = data['duration'] as Map<String, dynamic>?;
-    final scores = data['scores'] as Map<String, dynamic>?;
+  Widget _buildEmptyState() {
+    final isSearching = _searchController.text.isNotEmpty;
 
-    final date = timestamp?.toDate();
-    final dateStr = date != null
-        ? '${date.day}/${date.month}/${date.year}'
-        : 'Unknown date';
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isSearching ? Icons.search_off : Icons.mic_off,
+            size: 80,
+            color: Colors.white.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isSearching ? 'No speeches found' : 'No speeches yet',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isSearching
+                ? 'Try a different search term'
+                : 'Record or upload your first speech',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.transparent,
+  Widget _buildSpeechCard(Map<String, dynamic> speech, int index) {
+    final topic = speech['topic'] ?? 'Untitled';
+    final score = (speech['overall_score'] ?? 0).toDouble();
+    final timestamp = speech['timestamp'];
+    final date = timestamp != null ? _formatDate(timestamp) : 'Recently';
+    final analysisId = speech['analysis_id'] ?? speech['id'];
+
+    return Dismissible(
+      key: Key(analysisId ?? '$index'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white, size: 32),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppTheme.cardColor,
+            title: const Text(
+              'Delete Speech?',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: const Text(
+              'This action cannot be undone.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (direction) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null && analysisId != null) {
+          ApiService.deleteAnalysis(
+            analysisId: analysisId,
+            userId: user.uid,
+          ).then((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Speech deleted'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }).catchError((e) {
+            _loadHistory(); // Reload on error
+            _showError('Failed to delete: $e');
+          });
+        }
+
+        setState(() {
+          _filteredSpeeches.removeAt(index);
+          _allSpeeches.remove(speech);
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         child: InkWell(
           onTap: () {
-            // Navigate to detailed analysis
-            Navigator.push(
+            Navigator.pushNamed(
               context,
-              MaterialPageRoute(
-                builder: (context) => AdvancedAnalysisScreen(
-                  analysisResults: data,
-                ),
-              ),
+              '/full-analysis',
+              arguments: speech,
             );
           },
           borderRadius: BorderRadius.circular(12),
@@ -296,147 +463,72 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 color: Colors.white.withOpacity(0.1),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                // Header
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                // Score Circle
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _getScoreColor(score).withOpacity(0.2),
+                    border: Border.all(
+                      color: _getScoreColor(score),
+                      width: 3,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      score.toStringAsFixed(0),
+                      style: TextStyle(
+                        color: _getScoreColor(score),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        topic,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
                         children: [
-                          Text(
-                            topic,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Colors.white.withOpacity(0.6),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                size: 12,
-                                color: Colors.white54,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                dateStr,
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              if (duration != null) ...[
-                                const SizedBox(width: 12),
-                                Icon(
-                                  Icons.timer,
-                                  size: 12,
-                                  color: Colors.white54,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  duration['actual'] ?? 'N/A',
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ],
+                          const SizedBox(width: 4),
+                          Text(
+                            date,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-
-                    // Score Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getScoreColor(score).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _getScoreColor(score),
-                        ),
-                      ),
-                      child: Text(
-                        score.toStringAsFixed(1),
-                        style: TextStyle(
-                          color: _getScoreColor(score),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // Score Breakdown
-                if (scores != null) ...[
-                  Row(
-                    children: [
-                      _buildMiniScore(
-                        'Fluency',
-                        scores['proficiency'] ?? 0.0,
-                        20,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildMiniScore(
-                        'Voice',
-                        scores['voice_modulation'] ?? 0.0,
-                        20,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildMiniScore(
-                        'Structure',
-                        scores['speech_development'] ?? 0.0,
-                        20,
-                      ),
                     ],
                   ),
-                ],
-
-                const SizedBox(height: 8),
-
-                // View Details Button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdvancedAnalysisScreen(
-                              analysisResults: data,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.arrow_forward, size: 16),
-                      label: const Text('View Details'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.primaryColor,
-                      ),
-                    ),
-
-                    // Delete Button
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      color: Colors.red[300],
-                      onPressed: () => _confirmDelete(context, docId, topic),
-                    ),
-                  ],
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white.withOpacity(0.3),
+                  size: 16,
                 ),
               ],
             ),
@@ -446,96 +538,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildMiniScore(String label, double score, int maxScore) {
-    final percentage = score / maxScore;
-    final color = _getScoreColor(percentage * 100);
-
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: percentage,
-              minHeight: 4,
-              backgroundColor: Colors.white.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _confirmDelete(BuildContext context, String docId, String topic) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardColor,
-        title: const Text(
-          'Delete Speech?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'Are you sure you want to delete "$topic"? This cannot be undone.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldDelete == true) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('speeches')
-            .doc(docId)
-            .delete();
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Speech deleted'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } catch (e) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+  String _formatDate(dynamic timestamp) {
+    try {
+      DateTime date;
+      if (timestamp is String) {
+        date = DateTime.parse(timestamp);
+      } else {
+        return 'Recently';
       }
+
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) return 'Today';
+      if (difference.inDays == 1) return 'Yesterday';
+      if (difference.inDays < 7) return '${difference.inDays} days ago';
+
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return 'Recently';
     }
   }
 
   Color _getScoreColor(double score) {
-    if (score >= 80) return Colors.green;
-    if (score >= 60) return Colors.orange;
+    if (score >= 85) return Colors.green;
+    if (score >= 70) return Colors.blue;
+    if (score >= 55) return Colors.orange;
     return Colors.red;
   }
 }

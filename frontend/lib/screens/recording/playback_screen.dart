@@ -1,13 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:convert';
 import 'package:Speak_Sharp/utils/app_theme.dart';
+import 'package:Speak_Sharp/services/api_service.dart';
 import '../analysis/feedback_screen.dart';
-import '../../services/http_service.dart';
-import '../../constants/api_constants.dart';
 
 class PlaybackScreen extends StatefulWidget {
   final String audioPath;
@@ -115,10 +112,13 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
   Future<void> _uploadAndAnalyze() async {
     if (!mounted) return;
 
-    setState(() => _isUploading = true);
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+    });
 
     try {
-      print('🎯 Starting upload and analysis...');
+      print('Starting upload and analysis...');
 
       // Get current user
       final user = FirebaseAuth.instance.currentUser;
@@ -126,18 +126,25 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
         throw Exception('User not authenticated');
       }
 
-      // Upload and analyze
-      final httpService = HttpService();
-      final results = await httpService.uploadAndAnalyze(
+      // Upload and analyze with progress tracking
+      final results = await ApiService.analyzeSpeech(
         audioFile: File(widget.audioPath),
         userId: user.uid,
         topic: widget.topic,
         expectedDuration: widget.expectedDuration,
         speechTitle: 'Speech on ${widget.topic}',
         gender: 'auto',
+        analysisDepth: 'standard',
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _uploadProgress = progress;
+            });
+          }
+        },
       );
 
-      print('✅ Analysis complete!');
+      print('Analysis complete!');
 
       if (!mounted) return;
 
@@ -157,9 +164,12 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
 
       if (!mounted) return;
 
-      setState(() => _isUploading = false);
+      setState(() {
+        _isUploading = false;
+        _uploadProgress = 0.0;
+      });
 
-      // Show error dialog
+      // Show error dialog with retry option
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -175,7 +185,17 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _uploadAndAnalyze(); // Retry
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.primaryColor,
+              ),
+              child: const Text('Retry'),
             ),
           ],
         ),
@@ -311,7 +331,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                   _seekTo(Duration(seconds: value.toInt()));
                 },
                 activeColor: AppTheme.primaryColor,
-                inactiveColor: AppTheme.primaryColor.withValues(alpha: 0.3),
+                inactiveColor: AppTheme.primaryColor.withOpacity(0.3),
               ),
 
               // Time labels
@@ -353,7 +373,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                 color: AppTheme.primaryColor,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                    color: AppTheme.primaryColor.withOpacity(0.4),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -478,14 +498,18 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
             const SizedBox(height: 40),
 
             // Progress Bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: _uploadProgress,
-                minHeight: 8,
-                backgroundColor: AppTheme.cardColor,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppTheme.primaryColor,
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: _uploadProgress,
+                  minHeight: 8,
+                  backgroundColor: AppTheme.cardColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppTheme.primaryColor,
+                  ),
                 ),
               ),
             ),
@@ -537,7 +561,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
             decoration: BoxDecoration(
               color: isActive
                   ? AppTheme.primaryColor
-                  : AppTheme.primaryColor.withValues(alpha: 0.3),
+                  : AppTheme.primaryColor.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           );

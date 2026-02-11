@@ -5,6 +5,7 @@ import 'package:Speak_Sharp/providers/auth_provider.dart';
 import 'package:Speak_Sharp/providers/speech_provider.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'package:Speak_Sharp/screens/splash_screen.dart';
+import 'package:Speak_Sharp/screens/upload_audio_screen.dart';
 import 'package:Speak_Sharp/screens/onboarding/welcome_screen.dart';
 import 'package:Speak_Sharp/screens/onboarding/features_screen.dart';
 import 'package:Speak_Sharp/screens/onboarding/ready_screen.dart';
@@ -26,7 +27,7 @@ import 'package:Speak_Sharp/screens/profile/progress_dashboard_screen.dart';
 import 'package:Speak_Sharp/screens/settings/settings_screen.dart';
 import 'package:Speak_Sharp/screens/settings/notification_center_screen.dart';
 import 'package:Speak_Sharp/screens/settings/payment_screen.dart';
-
+import 'package:Speak_Sharp/screens/analysis/Full_analysis_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,6 +100,7 @@ class MyApp extends StatelessWidget {
           return null;
         },
         routes: {
+          '/upload-audio': (context) => const UploadAudioScreen(),
           '/splash': (context) => const SplashScreen(),
           '/onboarding/welcome': (context) => const WelcomeScreen(),
           '/onboarding/features': (context) => const FeaturesScreen(),
@@ -115,6 +117,10 @@ class MyApp extends StatelessWidget {
           '/settings': (context) => const SettingsScreen(),
           '/notifications': (context) => const NotificationCenterScreen(),
           '/payment': (context) => const PaymentScreen(),
+          '/full-analysis': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+            return FullAnalysisScreen(analysisData: args);
+          },
         },
       ),
     );
