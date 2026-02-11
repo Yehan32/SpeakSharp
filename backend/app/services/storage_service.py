@@ -29,7 +29,7 @@ class StorageService:
             # Check if already initialized
             if firebase_admin._apps:
                 self.db = firestore.client()
-                logger.info("✅ Firebase already initialized")
+                logger.info("Firebase already initialized")
                 return
             
             # Firebase credentials
@@ -53,10 +53,10 @@ class StorageService:
             })
             
             self.db = firestore.client()
-            logger.info("✅ Firebase initialized successfully")
+            logger.info("Firebase initialized successfully")
             
         except Exception as e:
-            logger.error(f"❌ Firebase initialization failed: {e}")
+            logger.error(f"Firebase initialization failed: {e}")
             raise StorageError(f"Failed to initialize storage: {str(e)}")
     
     async def save_analysis(
@@ -99,12 +99,12 @@ class StorageService:
                 "full_transcription": results.get("transcription", "")
             })
             
-            logger.info(f"✅ Analysis saved: {analysis_id}")
+            logger.info(f"Analysis saved: {analysis_id}")
             
             return analysis_id
             
         except Exception as e:
-            logger.error(f"❌ Failed to save analysis: {e}")
+            logger.error(f"Failed to save analysis: {e}")
             raise StorageError(f"Failed to save analysis: {str(e)}")
     
     async def get_analysis(
@@ -145,7 +145,7 @@ class StorageService:
             return data
             
         except Exception as e:
-            logger.error(f"❌ Failed to retrieve analysis: {e}")
+            logger.error(f"Failed to retrieve analysis: {e}")
             raise StorageError(f"Failed to retrieve analysis: {str(e)}")
     
     async def get_user_history(
@@ -184,7 +184,7 @@ class StorageService:
             return results
             
         except Exception as e:
-            logger.error(f"❌ Failed to get history: {e}")
+            logger.error(f"Failed to get history: {e}")
             raise StorageError(f"Failed to get history: {str(e)}")
     
     async def delete_analysis(
@@ -222,12 +222,12 @@ class StorageService:
             details_ref = doc_ref.collection('details').document('full')
             details_ref.delete()
             
-            logger.info(f"✅ Analysis deleted: {analysis_id}")
+            logger.info(f"Analysis deleted: {analysis_id}")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to delete analysis: {e}")
+            logger.error(f"Failed to delete analysis: {e}")
             raise StorageError(f"Failed to delete analysis: {str(e)}")
     
     async def update_analysis(
@@ -266,10 +266,10 @@ class StorageService:
             
             if filtered_updates:
                 doc_ref.update(filtered_updates)
-                logger.info(f"✅ Analysis updated: {analysis_id}")
+                logger.info(f"Analysis updated: {analysis_id}")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to update analysis: {e}")
+            logger.error(f"Failed to update analysis: {e}")
             raise StorageError(f"Failed to update analysis: {str(e)}")

@@ -27,7 +27,7 @@ class FirebaseService:
         
         self.db = firestore.client()
         self.bucket = storage.bucket()
-        logger.info("✅ Firebase Service initialized")
+        logger.info("Firebase Service initialized")
     
     def _initialize_firebase(self):
         """Initialize Firebase with service account credentials"""
@@ -55,7 +55,7 @@ class FirebaseService:
                 'storageBucket': settings.FIREBASE_STORAGE_BUCKET
             })
             
-            logger.info("🔥 Firebase Admin SDK initialized successfully")
+            logger.info("Firebase Admin SDK initialized successfully")
         
         except Exception as e:
             logger.error(f"Failed to initialize Firebase: {str(e)}")
@@ -91,7 +91,7 @@ class FirebaseService:
             # Make publicly accessible
             blob.make_public()
             
-            logger.info(f"☁️ File uploaded to: {storage_path}")
+            logger.info(f"File uploaded to: {storage_path}")
             return blob.public_url
         
         except Exception as e:
@@ -153,7 +153,7 @@ class FirebaseService:
             # Update user statistics
             await self._update_user_stats(user_id, analysis_data['overall_score'])
             
-            logger.info(f"💾 Saved speech analysis: {speech_ref.id}")
+            logger.info(f"Saved speech analysis: {speech_ref.id}")
             return speech_ref.id
         
         except Exception as e:
@@ -181,7 +181,7 @@ class FirebaseService:
                     'lastSpeechDate': firestore.SERVER_TIMESTAMP
                 })
                 
-                logger.info(f"📊 Updated stats for user {user_id}")
+                logger.info(f"Updated stats for user {user_id}")
         
         except Exception as e:
             logger.warning(f"Failed to update user stats: {str(e)}")

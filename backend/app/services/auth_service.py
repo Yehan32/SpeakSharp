@@ -15,7 +15,7 @@ class AuthService:
     """Service for authentication operations"""
     
     def __init__(self):
-        logger.info("🔐 Auth Service initialized")
+        logger.info("Auth Service initialized")
     
     async def verify_token(self, token: str) -> Optional[Dict]:
         """

@@ -19,7 +19,7 @@ def setup_logger(name: str) -> logging.Logger:
         return logger
     
     # File handler
-    log_file = log_dir / f"vocallabs_{datetime.now().strftime('%Y%m%d')}.log"
+    log_file = log_dir / f"SpeakSharp_{datetime.now().strftime('%Y%m%d')}.log"
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.DEBUG)
     

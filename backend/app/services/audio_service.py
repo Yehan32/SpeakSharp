@@ -24,7 +24,7 @@ class AudioProcessingService:
     def __init__(self):
         self.upload_dir = Path(settings.UPLOAD_DIR)
         self.upload_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"📁 Audio upload directory: {self.upload_dir}")
+        logger.info(f"Audio upload directory: {self.upload_dir}")
     
     async def save_upload(
         self,
@@ -61,7 +61,7 @@ class AudioProcessingService:
                 content = await file.read()
                 await f.write(content)
             
-            logger.info(f"✅ Audio saved: {filepath}")
+            logger.info(f"Audio saved: {filepath}")
             
             # Validate audio
             await self._validate_audio(str(filepath))
@@ -69,7 +69,7 @@ class AudioProcessingService:
             return str(filepath)
             
         except Exception as e:
-            logger.error(f"❌ Failed to save audio: {e}")
+            logger.error(f"Failed to save audio: {e}")
             raise AudioProcessingError(f"Failed to save audio file: {str(e)}")
     
     async def _validate_audio(self, filepath: str):
@@ -103,7 +103,7 @@ class AudioProcessingService:
         try:
             if os.path.exists(filepath):
                 os.remove(filepath)
-                logger.info(f"🗑️  Cleaned up: {filepath}")
+                logger.info(f"Cleaned up: {filepath}")
         except Exception as e:
             logger.warning(f"Failed to cleanup file: {e}")
     
@@ -117,6 +117,6 @@ class AudioProcessingService:
             files = sorted(user_dir.glob('*'), key=os.path.getmtime, reverse=True)
             for file in files[keep_recent:]:
                 file.unlink()
-                logger.info(f"🗑️  Cleaned up old file: {file}")
+                logger.info(f"Cleaned up old file: {file}")
         except Exception as e:
             logger.warning(f"Failed to cleanup user files: {e}")

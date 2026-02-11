@@ -16,7 +16,7 @@ from app.services.storage_service import StorageService
 from app.services.auth_service import AuthService
 from config.settings import Settings
 from app.utils.logger import setup_logger
-from app.utils.exceptions import VocalLabsException, AudioProcessingError, AnalysisError
+from app.utils.exceptions import SpeakSharpException, AudioProcessingError, AnalysisError
 
 # Setup
 settings = Settings()
@@ -26,7 +26,7 @@ logger = setup_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle application startup and shutdown"""
-    logger.info("Starting VocalLabs Backend...")
+    logger.info("Starting SpeakSharp Backend...")
     
     # Initialize services
     app.state.speech_service = SpeechAnalysisService()
@@ -317,9 +317,9 @@ async def quick_analyze(
 # Error Handlers
 # =====================
 
-@app.exception_handler(VocalLabsException)
-async def vocallabs_exception_handler(request, exc: VocalLabsException):
-    """Handle custom VocalLabs exceptions"""
+@app.exception_handler(SpeakSharpException)
+async def SpeakSharp_exception_handler(request, exc: SpeakSharpException):
+    """Handle custom SpeakSharp exceptions"""
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": exc.message, "details": exc.details}

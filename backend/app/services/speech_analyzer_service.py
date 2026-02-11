@@ -31,7 +31,7 @@ class SpeechAnalyzerService:
         self.content_engine = ContentAnalysisEngine()
         self.evaluation_engine = SpeechEvaluationEngine()
         
-        logger.info("✅ Speech Analyzer Service initialized successfully")
+        logger.info("Speech Analyzer Service initialized successfully")
     
     async def analyze_speech(
         self,
@@ -58,11 +58,11 @@ class SpeechAnalyzerService:
         Returns:
             Complete analysis results dictionary
         """
-        logger.info(f"🎯 Starting comprehensive analysis for user {user_id}")
+        logger.info(f"Starting comprehensive analysis for user {user_id}")
         
         try:
             # Step 1: Transcription (required for all other analyses)
-            logger.info("📝 Step 1: Transcribing audio...")
+            logger.info("Step 1: Transcribing audio...")
             transcription_result = await self.transcription_engine.transcribe(audio_path)
             
             transcript_text = transcription_result['text']
@@ -70,7 +70,7 @@ class SpeechAnalyzerService:
             whisper_result = transcription_result['raw_result']
             
             # Step 2: Run analyses in parallel for efficiency
-            logger.info("🔄 Step 2: Running parallel analyses...")
+            logger.info("Step 2: Running parallel analyses...")
             
             voice_task = self.voice_engine.analyze(
                 audio_path=audio_path,
@@ -93,7 +93,7 @@ class SpeechAnalyzerService:
             )
             
             # Step 3: Evaluate and generate final scores
-            logger.info("📊 Step 3: Calculating final scores...")
+            logger.info("Step 3: Calculating final scores...")
             evaluation_results = await self.evaluation_engine.evaluate(
                 voice_results=voice_results,
                 content_results=content_results,
@@ -103,7 +103,7 @@ class SpeechAnalyzerService:
             )
             
             # Step 4: Aggregate all results
-            logger.info("📦 Step 4: Aggregating results...")
+            logger.info("Step 4: Aggregating results...")
             final_result = self._aggregate_results(
                 transcription=transcription_result,
                 voice=voice_results,
@@ -119,11 +119,11 @@ class SpeechAnalyzerService:
                 }
             )
             
-            logger.info("✅ Analysis completed successfully")
+            logger.info("Analysis completed successfully")
             return final_result
         
         except Exception as e:
-            logger.error(f"❌ Analysis failed: {str(e)}", exc_info=True)
+            logger.error(f"Analysis failed: {str(e)}", exc_info=True)
             raise
     
     async def quick_analyze(

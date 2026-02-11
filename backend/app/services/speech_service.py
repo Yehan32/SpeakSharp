@@ -437,7 +437,7 @@ class SpeechAnalysisService:
     
     async def cleanup(self):
         """Cleanup resources"""
-        logger.info("🧹 Cleaning up Speech Analysis Service...")
+        logger.info("Cleaning up Speech Analysis Service...")
         # Cleanup code here
         self.whisper_model = None
         self.nlp_model = None
