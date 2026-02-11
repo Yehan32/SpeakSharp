@@ -26,7 +26,7 @@ logger = setup_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle application startup and shutdown"""
-    logger.info("🚀 Starting VocalLabs Backend...")
+    logger.info("Starting VocalLabs Backend...")
     
     # Initialize services
     app.state.speech_service = SpeechAnalysisService()
@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="VocalLabs API",
+    title="SpeakSharp API",
     description="Advanced Speech Analysis and Feedback System",
     version="2.0.0",
     lifespan=lifespan
