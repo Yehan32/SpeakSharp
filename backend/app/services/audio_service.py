@@ -12,8 +12,8 @@ from fastapi import UploadFile
 import librosa
 import soundfile as sf
 
-from utils.logger import setup_logger
-from utils.exceptions import AudioProcessingError
+from app.utils.logger import setup_logger
+from app.utils.exceptions import AudioProcessingError
 from config.settings import settings
 
 logger = setup_logger(__name__)

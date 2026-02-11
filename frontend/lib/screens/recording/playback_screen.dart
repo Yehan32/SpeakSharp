@@ -153,7 +153,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
       );
 
     } catch (e) {
-      print('❌ Upload/Analysis error: $e');
+      print('Upload/Analysis error: $e');
 
       if (!mounted) return;
 

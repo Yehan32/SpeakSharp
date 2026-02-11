@@ -14,8 +14,8 @@ from analyzers.structure_analyzer import StructureAnalyzer
 from analyzers.emphasis_analyzer import EmphasisAnalyzer
 from analyzers.topic_relevance_analyzer import TopicRelevanceAnalyzer
 from analyzers.proficiency_calculator import ProficiencyCalculator
-from utils.logger import setup_logger
-from utils.exceptions import AnalysisError
+from app.utils.logger import setup_logger
+from app.utils.exceptions import AnalysisError
 from config.settings import settings
 
 logger = setup_logger(__name__)

@@ -1,0 +1,19 @@
+# Environment Variables
+.env
+backend/.env
+*.env
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Uploads
+temp_uploads/
+uploads/

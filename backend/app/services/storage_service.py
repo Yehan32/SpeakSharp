@@ -10,8 +10,8 @@ import uuid
 from firebase_admin import credentials, firestore, initialize_app
 import firebase_admin
 
-from utils.logger import setup_logger
-from utils.exceptions import StorageError
+from app.utils.logger import setup_logger
+from app.utils.exceptions import StorageError
 from config.settings import settings
 
 logger = setup_logger(__name__)

@@ -6,8 +6,8 @@ Handles user authentication and authorization
 from typing import Optional, Dict
 from firebase_admin import auth as firebase_auth
 
-from utils.logger import setup_logger
-from utils.exceptions import AuthenticationError
+from app.utils.logger import setup_logger
+from app.utils.exceptions import AuthenticationError
 
 logger = setup_logger(__name__)
 
