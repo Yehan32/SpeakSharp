@@ -6,8 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import '../analysis/feedback_screen.dart';
-import '../services/http_service.dart';
-import '../constants/api_constants.dart';
+import '../../services/http_service.dart';
+import '../../constants/api_constants.dart';
 
 class PlaybackScreen extends StatefulWidget {
   final String audioPath;

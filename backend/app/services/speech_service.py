@@ -1,5 +1,4 @@
 import asyncio
-import whisper
 import torch
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -62,9 +61,9 @@ class SpeechAnalysisService:
         try:
             logger.info("Loading ML models...")
             
-            # Load Whisper model
-            self.whisper_model = whisper.load_model(settings.DEFAULT_MODEL)
-            logger.info(f"Whisper model '{settings.DEFAULT_MODEL}' loaded")
+            # OpenAI API is used for transcription, wisper
+            self.whisper_model = None
+            logger.info(f"Using OpenAI Whisper API")
             
             # Load spaCy model
             try:
