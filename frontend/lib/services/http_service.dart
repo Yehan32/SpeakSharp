@@ -61,15 +61,15 @@ class HttpService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Analysis successful!');
+        print('Analysis successful!');
         return data;
       } else {
-        print('❌ Analysis failed: ${response.body}');
+        print('Analysis failed: ${response.body}');
         throw Exception('Analysis failed: ${response.statusCode}');
       }
 
     } catch (e) {
-      print('❌ HTTP Error: $e');
+      print('HTTP Error: $e');
       rethrow;
     }
   }

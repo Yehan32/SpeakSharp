@@ -1,12 +1,10 @@
 class ApiConstants {
-  // Change this to your backend URL
-  // For local testing: 'http://10.0.2.2:8000' (Android Emulator)
-  // For local testing: 'http://localhost:8000' (iOS Simulator)
-  // For production: 'https://your-backend-url.com'
+  // Railway Production URL
+  static const String baseUrl = 'https://speaksharp-production.up.railway.app';
 
-  static const String baseUrl = 'http://10.0.2.2:8000'; // Android Emulator
+  // For local testing (comment out when using Railway)
+  // static const String baseUrl = 'http://10.0.2.2:8000'; // Android Emulator
   // static const String baseUrl = 'http://localhost:8000'; // iOS Simulator
-  // static const String baseUrl = 'https://your-production-url.com';
 
   // API Endpoints
   static const String analyzeEndpoint = '/api/v2/analyze';
