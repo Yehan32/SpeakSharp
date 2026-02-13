@@ -67,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         elevation: 0,
         title: const Text(
           'Settings',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         actions: [
           TextButton(
@@ -182,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: Colors.white.withOpacity(0.6),
+          color: AppTheme.textTertiary,
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 1,
@@ -206,7 +206,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               user?.email?[0].toUpperCase() ?? 'U',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -220,7 +220,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   user?.displayName ?? 'User',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -229,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   user?.email ?? '',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: AppTheme.textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -262,7 +262,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Icon(
               icon,
-              color: isDestructive ? Colors.red : Colors.white70,
+              color: isDestructive ? Colors.red : AppTheme.textSecondary,
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -282,7 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: AppTheme.textTertiary,
                       fontSize: 12,
                     ),
                   ),
@@ -316,7 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white70, size: 24),
+          Icon(icon, color: AppTheme.textSecondary, size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -325,7 +325,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -334,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: AppTheme.textTertiary,
                     fontSize: 12,
                   ),
                 ),
@@ -364,7 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.high_quality, color: Colors.white70, size: 24),
+              const Icon(Icons.high_quality, color: AppTheme.textSecondary, size: 24),
               const SizedBox(width: 16),
               const Expanded(
                 child: Column(
@@ -373,7 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       'Audio Quality',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -382,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       'Higher quality uses more storage',
                       style: TextStyle(
-                        color: Colors.white60,
+                        color: AppTheme.textTertiary,
                         fontSize: 12,
                       ),
                     ),
@@ -441,7 +441,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Text(
               'Default Analysis Depth',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -465,10 +465,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : Icons.radio_button_unchecked,
         color: _defaultAnalysisDepth == value
             ? AppTheme.primaryColor
-            : Colors.white54,
+            : AppTheme.textTertiary,
       ),
-      title: Text(label, style: const TextStyle(color: Colors.white)),
-      subtitle: Text(desc, style: const TextStyle(color: Colors.white60)),
+      title: Text(label, style: const TextStyle(color: AppTheme.textPrimary)),
+      subtitle: Text(desc, style: const TextStyle(color: AppTheme.textTertiary)),
       onTap: () {
         setState(() => _defaultAnalysisDepth = value);
         Navigator.pop(context);
@@ -491,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Text(
               'Default Duration',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -514,9 +514,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : Icons.radio_button_unchecked,
         color: _defaultDuration == duration
             ? AppTheme.primaryColor
-            : Colors.white54,
+            : AppTheme.textTertiary,
       ),
-      title: Text(duration, style: const TextStyle(color: Colors.white)),
+      title: Text(duration, style: const TextStyle(color: AppTheme.textPrimary)),
       onTap: () {
         setState(() => _defaultDuration = duration);
         Navigator.pop(context);
@@ -529,10 +529,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.cardColor,
-        title: const Text('Clear Cache?', style: TextStyle(color: Colors.white)),
+        title: const Text('Clear Cache?', style: TextStyle(color: AppTheme.textPrimary)),
         content: const Text(
           'This will free up storage space but may slow down the app temporarily.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
@@ -581,11 +581,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: AppTheme.cardColor,
         title: const Text(
           'Delete Account?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         content: const Text(
           'This action is permanent and cannot be undone. All your data will be deleted.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(

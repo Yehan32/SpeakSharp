@@ -7,10 +7,10 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenUpdatedState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenUpdatedState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoadingStats = true;
   Map<String, dynamic>? _stats;
 
@@ -28,12 +28,16 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
 
     try {
       final stats = await ApiService.getUserStatistics(userId: user.uid);
-      setState(() {
-        _stats = stats;
-        _isLoadingStats = false;
-      });
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoadingStats = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoadingStats = false);
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
       debugPrint('Error loading stats: $e');
     }
   }
@@ -44,34 +48,23 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Profile',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile Header
+            // REDESIGNED Profile Header - Vibrant Gradient!
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryColor.withOpacity(0.8),
-                    AppTheme.primaryColor.withOpacity(0.6),
-                  ],
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
+              decoration: const BoxDecoration(
+                gradient: AppTheme.profileGradient,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
               ),
               child: Column(
                 children: [
-                  // Avatar
+                  // Avatar with white background
                   Container(
                     width: 100,
                     height: 100,
@@ -81,8 +74,8 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
@@ -90,7 +83,7 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
                       child: Text(
                         _getInitials(user!),
                         style: TextStyle(
-                          color: AppTheme.primaryColor,
+                          color: AppTheme.accentColor,
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
                         ),
@@ -123,12 +116,23 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
 
                   const SizedBox(height: 8),
 
-                  // Member since
-                  Text(
-                    'Member since ${_getJoinDate(user)}',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
+                  // Member since badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Member since ${_getJoinDate(user)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -137,10 +141,25 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
 
             const SizedBox(height: 24),
 
-            // Statistics
+            // Statistics Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildStatistics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'YOUR STATS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textTertiary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildStatistics(),
+                ],
+              ),
             ),
 
             const SizedBox(height: 24),
@@ -156,7 +175,7 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[600],
+                      color: AppTheme.textTertiary,
                       letterSpacing: 1,
                     ),
                   ),
@@ -165,30 +184,35 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
                     Icons.history,
                     'Speech History',
                     'View all your past speeches',
+                    AppTheme.voiceColor,
                         () => Navigator.pushNamed(context, '/history'),
                   ),
                   _buildMenuItem(
                     Icons.trending_up,
                     'Progress Dashboard',
                     'Track your improvement',
+                    AppTheme.grammarColor,
                         () => Navigator.pushNamed(context, '/progress'),
                   ),
                   _buildMenuItem(
                     Icons.settings_outlined,
                     'Settings',
                     'App preferences and account',
+                    AppTheme.structureColor,
                         () => Navigator.pushNamed(context, '/settings'),
                   ),
                   _buildMenuItem(
                     Icons.help_outline,
                     'Help & Support',
                     'Get help and FAQs',
+                    AppTheme.proficiencyColor,
                         () => _showComingSoon(context, 'Help & Support'),
                   ),
                   _buildMenuItem(
                     Icons.info_outline,
                     'About',
                     'App version and info',
+                    AppTheme.textSecondary,
                         () => _showAboutDialog(context),
                   ),
                 ],
@@ -214,16 +238,19 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
     if (_isLoadingStats) {
       return Container(
         padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppTheme.cardShadow,
+        ),
         child: Center(
-          child: CircularProgressIndicator(
-            color: AppTheme.primaryColor,
-          ),
+          child: CircularProgressIndicator(color: AppTheme.accentColor),
         ),
       );
     }
 
     if (_stats == null) {
-      return const SizedBox.shrink();
+      return _buildEmptyStats();
     }
 
     final totalSpeeches = _stats!['total_speeches'] as int;
@@ -231,100 +258,147 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
     final bestScore = (_stats!['best_score'] as num).toDouble();
     final totalDuration = _stats!['total_duration'] as int;
 
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.mic,
+                value: totalSpeeches.toString(),
+                label: 'Speeches',
+                color: AppTheme.voiceColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.star,
+                value: avgScore.toStringAsFixed(1),
+                label: 'Avg Score',
+                color: AppTheme.grammarColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.emoji_events,
+                value: bestScore.toStringAsFixed(1),
+                label: 'Best Score',
+                color: AppTheme.successColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.access_time,
+                value: _formatDuration(totalDuration),
+                label: 'Total Time',
+                color: AppTheme.proficiencyColor,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: AppTheme.getColoredShadow(color),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 2,
+        ),
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  Icons.mic,
-                  totalSpeeches.toString(),
-                  'Speeches',
-                  Colors.blue,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 60,
-                color: Colors.grey[300],
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  Icons.star,
-                  avgScore.toStringAsFixed(1),
-                  'Avg Score',
-                  Colors.orange,
-                ),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 28),
           ),
-          const SizedBox(height: 16),
-          Divider(color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  Icons.emoji_events,
-                  bestScore.toStringAsFixed(1),
-                  'Best Score',
-                  Colors.green,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 60,
-                color: Colors.grey[300],
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  Icons.access_time,
-                  _formatDuration(totalDuration),
-                  'Total Time',
-                  Colors.purple,
-                ),
-              ),
-            ],
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(
-      IconData icon,
-      String value,
-      String label,
-      Color color,
-      ) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 32),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+  Widget _buildEmptyStats() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.accentColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.analytics_outlined,
+              size: 48,
+              color: AppTheme.accentColor,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
+          const SizedBox(height: 16),
+          Text(
+            'No statistics yet',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            'Record your first speech to see your stats here',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -332,28 +406,33 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
       IconData icon,
       String title,
       String subtitle,
+      Color color,
       VoidCallback onTap,
       ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.cardShadow,
+          border: Border.all(
+            color: color.withOpacity(0.2),
+            width: 2,
+          ),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(10),
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.grey[700], size: 24),
+              child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -362,7 +441,8 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -372,13 +452,13 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+            Icon(Icons.arrow_forward_ios, color: AppTheme.textTertiary, size: 16),
           ],
         ),
       ),
@@ -386,18 +466,34 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
   }
 
   Widget _buildLogoutButton() {
-    return SizedBox(
-      width: double.infinity,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.errorColor,
+            AppTheme.errorColor.withOpacity(0.8),
+          ],
+        ),
+        boxShadow: AppTheme.getColoredShadow(AppTheme.errorColor),
+      ),
       child: ElevatedButton.icon(
         onPressed: _handleLogout,
-        icon: const Icon(Icons.logout),
-        label: const Text('Logout'),
+        icon: const Icon(Icons.logout, color: Colors.white),
+        label: const Text(
+          'Logout',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -408,16 +504,29 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Logout',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
             child: const Text('Logout'),
           ),
         ],
@@ -438,12 +547,25 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Coming Soon'),
-        content: Text('$feature feature is under development.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Coming Soon',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          '$feature feature is under development.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(
+              'OK',
+              style: TextStyle(color: AppTheme.accentColor),
+            ),
           ),
         ],
       ),
@@ -454,31 +576,44 @@ class _ProfileScreenUpdatedState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('About SpeakSharp'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'About SpeakSharp',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Version 1.0.0',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'SpeakSharp helps you improve your public speaking skills with AI-powered analysis and feedback.',
-              style: TextStyle(color: Colors.grey[700]),
+              style: TextStyle(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 16),
             Text(
-              '© 2025 SpeakSharp',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              '© 2026 SpeakSharp',
+              style: TextStyle(fontSize: 12, color: AppTheme.textTertiary),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(
+              'OK',
+              style: TextStyle(color: AppTheme.accentColor),
+            ),
           ),
         ],
       ),

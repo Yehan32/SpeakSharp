@@ -78,7 +78,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
         elevation: 0,
         title: const Text(
           'Progress Dashboard',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
       ),
       body: _isLoading
@@ -116,7 +116,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
           Text(
             'No data yet',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: AppTheme.textSecondary,
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
@@ -125,7 +125,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
           Text(
             'Record more speeches to see your progress',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: AppTheme.textTertiary,
               fontSize: 14,
             ),
           ),
@@ -160,7 +160,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: Colors.white,
+            color: AppTheme.textPrimary,
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -233,12 +233,12 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white, size: 24),
+        Icon(icon, color: AppTheme.textPrimary, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppTheme.textPrimary,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -246,7 +246,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
+            color: AppTheme.textPrimary,
             fontSize: 12,
           ),
         ),
@@ -287,7 +287,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
           const Text(
             'Score Trend',
             style: TextStyle(
-              color: Colors.white,
+              color: AppTheme.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -329,7 +329,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                             child: Text(
                               '${value.toInt() + 1}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: AppTheme.textTertiary,
                                 fontSize: 12,
                               ),
                             ),
@@ -348,7 +348,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                         return Text(
                           value.toInt().toString(),
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
+                            color: AppTheme.textTertiary,
                             fontSize: 12,
                           ),
                         );
@@ -373,7 +373,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
                           radius: 4,
-                          color: Colors.white,
+                          color: AppTheme.textPrimary,
                           strokeWidth: 2,
                           strokeColor: AppTheme.primaryColor,
                         );
@@ -393,7 +393,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
             'Speech Number',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: AppTheme.textTertiary,
               fontSize: 12,
             ),
           ),
@@ -440,7 +440,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
           const Text(
             'Category Breakdown',
             style: TextStyle(
-              color: Colors.white,
+              color: AppTheme.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -472,7 +472,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                 child: Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -529,7 +529,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
           const Text(
             'Your Progress',
             style: TextStyle(
-              color: Colors.white,
+              color: AppTheme.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -552,7 +552,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                           ? 'Great improvement!'
                           : 'Keep practicing!',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -560,7 +560,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                     Text(
                       '${improvement >= 0 ? '+' : ''}${improvement.toStringAsFixed(1)} points since first speech',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: AppTheme.textSecondary,
                         fontSize: 13,
                       ),
                     ),

@@ -75,7 +75,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
             Text(
               topic,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -83,7 +83,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
             Text(
               'Score: ${overallScore.toStringAsFixed(1)}/100',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: AppTheme.textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -91,7 +91,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share, color: Colors.white),
+            icon: const Icon(Icons.share, color: AppTheme.textPrimary),
             onPressed: _shareAnalysis,
           ),
         ],
@@ -144,13 +144,13 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withOpacity(0.3),
-              border: Border.all(color: Colors.white, width: 3),
+              border: Border.all(color: AppTheme.textPrimary, width: 3),
             ),
             child: Center(
               child: Text(
                 overallScore.toStringAsFixed(0),
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
@@ -165,7 +165,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
                 const Text(
                   'Overall Performance',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -174,7 +174,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
                 Text(
                   _getScoreLabel(overallScore),
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -183,7 +183,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
                 Text(
                   _getScoreGrade(overallScore),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: AppTheme.textPrimary,
                     fontSize: 14,
                   ),
                 ),
@@ -228,7 +228,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white60,
+              color: isSelected ? Colors.white : AppTheme.textTertiary,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 14,
             ),
@@ -260,7 +260,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
         const Text(
           'Score Breakdown',
           style: TextStyle(
-            color: Colors.white,
+            color: AppTheme.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -322,7 +322,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
                 child: Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -366,7 +366,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
         const Text(
           'Key Metrics',
           style: TextStyle(
-            color: Colors.white,
+            color: AppTheme.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -420,7 +420,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white70,
+              color: AppTheme.textSecondary,
               fontSize: 12,
             ),
           ),
@@ -445,7 +445,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
               const Text(
                 'Filler Words Analysis',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -472,7 +472,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
               const Text(
                 'Pause Analysis',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -506,7 +506,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
             child: Text(
               label,
               style: const TextStyle(
-                color: Colors.white70,
+                color: AppTheme.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -514,7 +514,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
           Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppTheme.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
@@ -542,13 +542,13 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
                   const Text(
                     'Full Transcription',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppTheme.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy, color: Colors.white70),
+                    icon: const Icon(Icons.copy, color: AppTheme.textSecondary),
                     onPressed: () => _copyTranscription(transcription),
                   ),
                 ],
@@ -557,7 +557,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
               SelectableText(
                 transcription,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 15,
                   height: 1.6,
                 ),

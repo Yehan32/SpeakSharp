@@ -122,11 +122,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         backgroundColor: AppTheme.cardColor,
         title: const Text(
           'Delete Speech?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         content: const Text(
           'This action cannot be undone.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
@@ -192,7 +192,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             const Text(
               'Sort By',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -214,7 +214,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return ListTile(
       leading: Icon(
         isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-        color: isSelected ? AppTheme.primaryColor : Colors.white54,
+        color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
       ),
       title: Text(
         label,
@@ -252,11 +252,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         elevation: 0,
         title: const Text(
           'Speech History',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sort, color: Colors.white),
+            icon: const Icon(Icons.sort, color: AppTheme.textPrimary),
             onPressed: _showSortOptions,
           ),
         ],
@@ -268,11 +268,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: _searchController,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: AppTheme.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search speeches...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                hintStyle: TextStyle(color: AppTheme.textTertiary),
+                prefixIcon: const Icon(Icons.search, color: AppTheme.textTertiary),
                 filled: true,
                 fillColor: AppTheme.cardColor,
                 border: OutlineInputBorder(
@@ -281,7 +281,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.white54),
+                  icon: const Icon(Icons.clear, color: AppTheme.textTertiary),
                   onPressed: () {
                     _searchController.clear();
                     _filterSpeeches();
@@ -301,7 +301,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Text(
                     '${_filteredSpeeches.length} speech${_filteredSpeeches.length == 1 ? '' : 'es'}',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -353,7 +353,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Text(
             isSearching ? 'No speeches found' : 'No speeches yet',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: AppTheme.textSecondary,
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
@@ -364,7 +364,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ? 'Try a different search term'
                 : 'Record or upload your first speech',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: AppTheme.textTertiary,
               fontSize: 14,
             ),
           ),
@@ -390,7 +390,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           color: Colors.red,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(Icons.delete, color: Colors.white, size: 32),
+        child: const Icon(Icons.delete, color: AppTheme.textPrimary, size: 32),
       ),
       confirmDismiss: (direction) async {
         return await showDialog<bool>(
@@ -399,11 +399,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
             backgroundColor: AppTheme.cardColor,
             title: const Text(
               'Delete Speech?',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.textPrimary),
             ),
             content: const Text(
               'This action cannot be undone.',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: AppTheme.textSecondary),
             ),
             actions: [
               TextButton(
@@ -497,7 +497,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       Text(
                         topic,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.textPrimary,
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
                         ),
@@ -510,13 +510,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           Icon(
                             Icons.calendar_today,
                             size: 14,
-                            color: Colors.white.withOpacity(0.6),
+                            color: AppTheme.textTertiary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             date,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
+                              color: AppTheme.textTertiary,
                               fontSize: 13,
                             ),
                           ),

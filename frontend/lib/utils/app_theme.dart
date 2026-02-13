@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Colors matching the redesign
+  // REDESIGNED COLORS - More vibrant and professional!
   static const Color primaryColor = Color(0xFF1A1A1A);
   static const Color accentColor = Color(0xFF667EEA);
   static const Color secondaryAccent = Color(0xFF764BA2);
@@ -11,40 +11,58 @@ class AppTheme {
   static const Color textPrimary = Color(0xFF1A1A1A);
   static const Color textSecondary = Color(0xFF666666);
   static const Color textTertiary = Color(0xFF999999);
-  
-  // Gradient colors
+
+  // Enhanced gradient colors
   static const Color gradientStart = Color(0xFFFF6B6B);
   static const Color gradientMid = Color(0xFF4ECDC4);
   static const Color gradientEnd = Color(0xFF45B7D1);
-  
-  static const Color successColor = Color(0xFF11998E);
-  static const Color successLight = Color(0xFF38EF7D);
-  static const Color warningColor = Color(0xFFFFD93D);
-  static const Color errorColor = Color(0xFFFF6B6B);
-  
+
+  // Better status colors
+  static const Color successColor = Color(0xFF10B981);
+  static const Color successLight = Color(0xFF34D399);
+  static const Color warningColor = Color(0xFFFB923C);
+  static const Color errorColor = Color(0xFFEF4444);
+
+  // NEW: Category colors for stats
+  static const Color voiceColor = Color(0xFF8B5CF6);
+  static const Color grammarColor = Color(0xFF3B82F6);
+  static const Color structureColor = Color(0xFF10B981);
+  static const Color proficiencyColor = Color(0xFFF59E0B);
+
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [accentColor, secondaryAccent],
   );
-  
+
   static const LinearGradient splashGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [gradientStart, gradientMid, gradientEnd],
   );
-  
+
   static const LinearGradient successGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [successColor, successLight],
   );
-  
+
   static const LinearGradient warningGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [warningColor, Color(0xFFFF8C42)],
+    colors: [warningColor, Color(0xFFFBBF24)],
+  );
+
+  // NEW: Vibrant profile gradient
+  static const LinearGradient profileGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF667EEA),
+      Color(0xFF764BA2),
+      Color(0xFF8B5CF6),
+    ],
   );
 
   static ThemeData get lightTheme {
@@ -58,8 +76,8 @@ class AppTheme {
         surface: backgroundColor,
         error: errorColor,
       ),
-      
-      // Text Theme using Lexend
+
+      // Text Theme using Lexend & Manrope
       textTheme: TextTheme(
         displayLarge: GoogleFonts.manrope(
           fontSize: 38,
@@ -112,7 +130,7 @@ class AppTheme {
           color: textTertiary,
         ),
       ),
-      
+
       // Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -129,7 +147,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryColor,
@@ -144,7 +162,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -171,18 +189,18 @@ class AppTheme {
           color: textTertiary,
         ),
       ),
-      
+
       // Card Theme
       cardTheme: CardThemeData(
         color: cardColor,
         elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.05),
+        shadowColor: Colors.black.withOpacity(0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         margin: const EdgeInsets.symmetric(vertical: 8),
       ),
-      
+
       // App Bar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: cardColor,
@@ -195,7 +213,7 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: textPrimary),
       ),
-      
+
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: cardColor,
@@ -214,28 +232,64 @@ class AppTheme {
       ),
     );
   }
-  
+
   // Common Shadows
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.05),
+      color: Colors.black.withOpacity(0.05),
       blurRadius: 10,
       offset: const Offset(0, 2),
     ),
   ];
-  
+
   static List<BoxShadow> get elevatedShadow => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.1),
+      color: Colors.black.withOpacity(0.1),
       blurRadius: 40,
       offset: const Offset(0, 10),
     ),
   ];
-  
+
+  // NEW: Colored shadows for cards
+  static List<BoxShadow> getColoredShadow(Color color) => [
+    BoxShadow(
+      color: color.withOpacity(0.2),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
   // Common Border Radius
   static const BorderRadius smallRadius = BorderRadius.all(Radius.circular(12));
   static const BorderRadius mediumRadius = BorderRadius.all(Radius.circular(16));
   static const BorderRadius largeRadius = BorderRadius.all(Radius.circular(20));
   static const BorderRadius extraLargeRadius = BorderRadius.all(Radius.circular(25));
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(18));
+
+  // NEW: Helper method to get score color
+  static Color getScoreColor(double score) {
+    if (score >= 85) return successColor;
+    if (score >= 70) return Color(0xFF3B82F6);
+    if (score >= 55) return warningColor;
+    return errorColor;
+  }
+
+  // NEW: Helper method to get category color
+  static Color getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'voice':
+      case 'voice_modulation':
+        return voiceColor;
+      case 'grammar':
+      case 'vocabulary':
+        return grammarColor;
+      case 'structure':
+      case 'speech_development':
+        return structureColor;
+      case 'proficiency':
+        return proficiencyColor;
+      default:
+        return accentColor;
+    }
+  }
 }

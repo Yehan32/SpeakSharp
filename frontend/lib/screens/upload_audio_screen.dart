@@ -137,12 +137,12 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
         elevation: 0,
         title: const Text(
           'Upload Recording',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         leading: _isUploading
             ? null
             : IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -178,7 +178,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                   child: Text(
                     'Upload an existing audio file to get instant feedback',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: AppTheme.textPrimary,
                       fontSize: 14,
                     ),
                   ),
@@ -223,7 +223,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                       size: 48,
                       color: _selectedFile != null
                           ? AppTheme.primaryColor
-                          : Colors.white54,
+                          : AppTheme.textTertiary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -232,7 +232,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                         ? _selectedFile!.path.split('/').last
                         : 'Tap to select audio file',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -244,7 +244,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                   Text(
                     'MP3, WAV, M4A, OGG, FLAC (Max 50MB)',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: AppTheme.textTertiary,
                       fontSize: 13,
                     ),
                   ),
@@ -259,7 +259,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           const Text(
             'Speech Details',
             style: TextStyle(
-              color: Colors.white,
+              color: AppTheme.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -268,15 +268,15 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
 
           TextField(
             controller: _topicController,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Topic *',
-              labelStyle: const TextStyle(color: Colors.white70),
+              labelStyle: const TextStyle(color: AppTheme.textSecondary),
               hintText: 'e.g., Climate Change',
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.topic, color: Colors.white54),
+              prefixIcon: const Icon(Icons.topic, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -290,13 +290,13 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           DropdownButtonFormField<String>(
             value: _selectedDuration,
             dropdownColor: AppTheme.cardColor,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Expected Duration',
-              labelStyle: const TextStyle(color: Colors.white70),
+              labelStyle: const TextStyle(color: AppTheme.textSecondary),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.timer, color: Colors.white54),
+              prefixIcon: const Icon(Icons.timer, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -319,13 +319,13 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           DropdownButtonFormField<String>(
             value: _selectedDepth,
             dropdownColor: AppTheme.cardColor,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Analysis Depth',
-              labelStyle: const TextStyle(color: Colors.white70),
+              labelStyle: const TextStyle(color: AppTheme.textSecondary),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.analytics, color: Colors.white54),
+              prefixIcon: const Icon(Icons.analytics, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -354,13 +354,13 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           DropdownButtonFormField<String>(
             value: _selectedGender,
             dropdownColor: AppTheme.cardColor,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Gender (for voice analysis)',
-              labelStyle: const TextStyle(color: Colors.white70),
+              labelStyle: const TextStyle(color: AppTheme.textSecondary),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.person, color: Colors.white54),
+              prefixIcon: const Icon(Icons.person, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -442,14 +442,14 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
               child: const Icon(
                 Icons.cloud_upload,
                 size: 64,
-                color: Colors.white,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 40),
             const Text(
               'Analyzing Your Speech',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -458,7 +458,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
             Text(
               'Using AI to evaluate your performance',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: AppTheme.textSecondary,
                 fontSize: 15,
               ),
             ),
@@ -480,7 +480,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
             Text(
               '${(_uploadProgress * 100).toStringAsFixed(0)}%',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
@@ -489,7 +489,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
             Text(
               'This may take 1-2 minutes...',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: AppTheme.textTertiary,
                 fontSize: 14,
               ),
             ),
@@ -497,7 +497,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
             Text(
               'Please don\'t close the app',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: AppTheme.textTertiary,
                 fontSize: 13,
               ),
             ),

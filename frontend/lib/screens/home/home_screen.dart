@@ -15,7 +15,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingRecent = true;
   Map<String, dynamic>? _stats;
   List<Map<String, dynamic>> _recentSpeeches = [];
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -34,22 +33,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    setState(() {
-      _isLoadingStats = true;
-      _errorMessage = null;
-    });
+    setState(() => _isLoadingStats = true);
 
     try {
       final stats = await ApiService.getUserStatistics(userId: user.uid);
-      setState(() {
-        _stats = stats;
-        _isLoadingStats = false;
-      });
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoadingStats = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoadingStats = false;
-        _errorMessage = 'Failed to load statistics';
-      });
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
       debugPrint('Error loading stats: $e');
     }
   }
@@ -58,49 +55,29 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    setState(() {
-      _isLoadingRecent = true;
-    });
+    setState(() => _isLoadingRecent = true);
 
     try {
       final history = await ApiService.getUserHistory(
         userId: user.uid,
         limit: 5,
       );
-      setState(() {
-        _recentSpeeches = history;
-        _isLoadingRecent = false;
-      });
+      if (mounted) {
+        setState(() {
+          _recentSpeeches = history;
+          _isLoadingRecent = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoadingRecent = false;
-      });
+      if (mounted) {
+        setState(() => _isLoadingRecent = false);
+      }
       debugPrint('Error loading recent activity: $e');
     }
   }
 
   Future<void> _refreshData() async {
     await _loadData();
-  }
-
-  void _startRecording() {
-    // Show speech details dialog first
-    showDialog(
-      context: context,
-      builder: (context) => const SpeechDetailsDialog(),
-    ).then((details) {
-      if (details != null) {
-        Navigator.pushNamed(
-          context,
-          '/recording',
-          arguments: details,
-        ).then((_) => _refreshData());
-      }
-    });
-  }
-
-  void _uploadRecording() {
-    Navigator.pushNamed(context, '/upload-audio').then((_) => _refreshData());
   }
 
   @override
@@ -114,21 +91,23 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _refreshData,
-          color: AppTheme.primaryColor,
+          color: AppTheme.accentColor,
           child: CustomScrollView(
             slivers: [
-              // Header
+              // Header with greeting
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Greeting
                       Text(
                         greeting,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: AppTheme.textSecondary,
                           fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -136,17 +115,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             userName,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            '👋',
-                            style: TextStyle(fontSize: 32),
-                          ),
+                          const Text('👋', style: TextStyle(fontSize: 32)),
                         ],
                       ),
                     ],
@@ -165,13 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.mic,
                         title: 'Start Recording',
                         subtitle: 'Begin a new speech session',
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.primaryColor,
-                            AppTheme.primaryColor.withOpacity(0.8),
-                          ],
-                        ),
-                        onTap: _startRecording,
+                        gradient: AppTheme.primaryGradient,
+                        onTap: () => Navigator.pushNamed(context, '/recording'),
                       ),
 
                       const SizedBox(height: 16),
@@ -187,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Colors.deepPurple.shade600,
                           ],
                         ),
-                        onTap: _uploadRecording,
+                        onTap: () => Navigator.pushNamed(context, '/upload-audio'),
                       ),
                     ],
                   ),
@@ -196,11 +167,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-              // Statistics
+              // Statistics Section
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: _buildStatistics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'YOUR PROGRESS',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textTertiary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildStatistics(),
+                    ],
+                  ),
                 ),
               ),
 
@@ -213,24 +199,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'RECENT ACTIVITY',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white54,
+                          color: AppTheme.textTertiary,
                           letterSpacing: 1,
                         ),
                       ),
                       if (_recentSpeeches.isNotEmpty)
                         TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/history');
-                          },
+                          onPressed: () => Navigator.pushNamed(context, '/history'),
                           child: Text(
                             'View All',
                             style: TextStyle(
-                              color: AppTheme.primaryColor,
+                              color: AppTheme.accentColor,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -263,19 +247,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppTheme.cardShadow,
         ),
         child: Row(
           children: [
@@ -324,41 +302,72 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildStatistics() {
     if (_isLoadingStats) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          children: [
-            Text(_errorMessage!, style: const TextStyle(color: Colors.white70)),
-            TextButton(onPressed: _loadStatistics, child: const Text('Retry')),
-          ],
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        child: Center(
+          child: CircularProgressIndicator(color: AppTheme.accentColor),
         ),
       );
     }
 
-    final totalSpeeches = _stats?['total_speeches'] ?? 0;
-    final avgScore = (_stats?['average_score'] ?? 0.0).toDouble();
+    if (_stats == null) {
+      return _buildEmptyStats();
+    }
 
-    return Row(
+    final totalSpeeches = _stats!['total_speeches'] as int;
+    final avgScore = (_stats!['average_score'] as num).toDouble();
+    final bestScore = (_stats!['best_score'] as num).toDouble();
+    final totalDuration = _stats!['total_duration'] as int;
+
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.mic,
-            value: totalSpeeches.toString(),
-            label: 'SPEECHES',
-            color: Colors.blue,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.mic,
+                value: totalSpeeches.toString(),
+                label: 'Speeches',
+                color: AppTheme.voiceColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.star,
+                value: avgScore.toStringAsFixed(1),
+                label: 'Avg Score',
+                color: AppTheme.grammarColor,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.star,
-            value: avgScore.toStringAsFixed(1),
-            label: 'AVG SCORE',
-            color: Colors.orange,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.emoji_events,
+                value: bestScore.toStringAsFixed(1),
+                label: 'Best Score',
+                color: AppTheme.successColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.access_time,
+                value: _formatDuration(totalDuration),
+                label: 'Total Time',
+                color: AppTheme.proficiencyColor,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -375,6 +384,11 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.getColoredShadow(color),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 2,
+        ),
       ),
       child: Column(
         children: [
@@ -384,14 +398,63 @@ class _HomeScreenState extends State<HomeScreen> {
             value,
             style: TextStyle(
               color: color,
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyStats() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.accentColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.analytics_outlined,
+              size: 48,
+              color: AppTheme.accentColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No statistics yet',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Record or upload your first speech to see your progress',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -400,11 +463,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentActivity() {
     if (_isLoadingRecent) {
-      return const SliverToBoxAdapter(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(40.0),
-            child: CircularProgressIndicator(),
+      return SliverToBoxAdapter(
+        child: Container(
+          padding: const EdgeInsets.all(40),
+          child: Center(
+            child: CircularProgressIndicator(color: AppTheme.accentColor),
           ),
         ),
       );
@@ -417,20 +480,28 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(40),
           decoration: BoxDecoration(
             color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppTheme.cardShadow,
           ),
           child: Column(
             children: [
-              Icon(
-                Icons.mic_off,
-                size: 64,
-                color: Colors.white.withOpacity(0.3),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.mic_off,
+                  size: 48,
+                  color: AppTheme.accentColor,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
                 'No speeches yet',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: AppTheme.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
@@ -440,7 +511,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Record or upload your first speech to get started',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: AppTheme.textSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -474,30 +545,39 @@ class _HomeScreenState extends State<HomeScreen> {
             arguments: speech,
           );
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppTheme.cardShadow,
+            border: Border.all(
+              color: AppTheme.getScoreColor(score).withOpacity(0.2),
+              width: 2,
+            ),
           ),
           child: Row(
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _getScoreColor(score).withOpacity(0.2),
-                  border: Border.all(color: _getScoreColor(score), width: 2),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.getScoreColor(score),
+                      AppTheme.getScoreColor(score).withOpacity(0.7),
+                    ],
+                  ),
+                  boxShadow: AppTheme.getColoredShadow(AppTheme.getScoreColor(score)),
                 ),
                 child: Center(
                   child: Text(
                     score.toStringAsFixed(0),
-                    style: TextStyle(
-                      color: _getScoreColor(score),
-                      fontSize: 16,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -510,8 +590,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       topic,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -522,7 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       date,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: AppTheme.textSecondary,
                         fontSize: 13,
                       ),
                     ),
@@ -531,7 +611,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                color: Colors.white.withOpacity(0.3),
+                color: AppTheme.textTertiary,
                 size: 16,
               ),
             ],
@@ -547,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: AppTheme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -595,14 +675,14 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(
               icon,
-              color: isActive ? AppTheme.primaryColor : Colors.white54,
+              color: isActive ? AppTheme.accentColor : AppTheme.textTertiary,
               size: 28,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isActive ? AppTheme.primaryColor : Colors.white54,
+                color: isActive ? AppTheme.accentColor : AppTheme.textTertiary,
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -642,126 +722,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Color _getScoreColor(double score) {
-    if (score >= 85) return Colors.green;
-    if (score >= 70) return Colors.blue;
-    if (score >= 55) return Colors.orange;
-    return Colors.red;
-  }
-}
+  String _formatDuration(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
 
-// Speech Details Dialog Widget (referenced in _startRecording)
-class SpeechDetailsDialog extends StatefulWidget {
-  const SpeechDetailsDialog({super.key});
-
-  @override
-  State<SpeechDetailsDialog> createState() => _SpeechDetailsDialogState();
-}
-
-class _SpeechDetailsDialogState extends State<SpeechDetailsDialog> {
-  final _topicController = TextEditingController();
-  String _selectedDuration = '5-7 minutes';
-  String _selectedDepth = 'standard';
-  String _selectedGender = 'auto';
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppTheme.cardColor,
-      title: const Text(
-        'Speech Details',
-        style: TextStyle(color: Colors.white),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _topicController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Topic',
-                labelStyle: const TextStyle(color: Colors.white70),
-                hintText: 'e.g., Climate Change',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: AppTheme.primaryColor),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedDuration,
-              dropdownColor: AppTheme.cardColor,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Expected Duration',
-                labelStyle: TextStyle(color: Colors.white70),
-              ),
-              items: ['1-2 minutes', '3-5 minutes', '5-7 minutes', '7-10 minutes']
-                  .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedDuration = v!),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedDepth,
-              dropdownColor: AppTheme.cardColor,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Analysis Depth',
-                labelStyle: TextStyle(color: Colors.white70),
-              ),
-              items: [
-                DropdownMenuItem(value: 'basic', child: Text('Basic (Fast)')),
-                DropdownMenuItem(value: 'standard', child: Text('Standard (Recommended)')),
-                DropdownMenuItem(value: 'advanced', child: Text('Advanced (Detailed)')),
-              ],
-              onChanged: (v) => setState(() => _selectedDepth = v!),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedGender,
-              dropdownColor: AppTheme.cardColor,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Gender',
-                labelStyle: TextStyle(color: Colors.white70),
-              ),
-              items: [
-                DropdownMenuItem(value: 'auto', child: Text('Auto-detect')),
-                DropdownMenuItem(value: 'male', child: Text('Male')),
-                DropdownMenuItem(value: 'female', child: Text('Female')),
-              ],
-              onChanged: (v) => setState(() => _selectedGender = v!),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context, {
-              'topic': _topicController.text.isEmpty ? 'Untitled' : _topicController.text,
-              'expectedDuration': _selectedDuration,
-              'analysisDepth': _selectedDepth,
-              'gender': _selectedGender,
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
-          ),
-          child: const Text('Continue'),
-        ),
-      ],
-    );
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (minutes > 0) {
+      return '${minutes}m';
+    } else {
+      return '${seconds}s';
+    }
   }
 }
