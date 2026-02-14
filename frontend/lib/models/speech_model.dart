@@ -1,261 +1,300 @@
 class SpeechModel {
-  final String id;
-  final String userId;
-  final String topic;
-  final String speechType; // Ice Breaker, Prepared, Evaluation, Table Topics
-  final DateTime recordedAt;
-  final int duration; // in seconds
-  final String audioUrl;
-  final double overallScore;
-  final AnalysisResult? analysis;
+  final String? id;
+  final String? userId;
+  final String? title;
+  final String? topic;
+  final String? duration;
+  final DateTime? createdAt;
+  final String? audioUrl;
+  final String? transcription;
+
+  // Overall Score (0-100)
+  final double? overallScore;
+
+  // Category Scores (0-20 each)
+  final double? grammarScore;
+  final double? voiceScore;
+  final double? structureScore;
+  final double? effectivenessScore;
+  final double? proficiencyScore;
+
+  // Detailed Metrics - Fluency
+  final int? fillerWordCount;
+  final int? pauseCount;
+  final String? wordsPerMinute;
+
+  // Detailed Metrics - Voice
+  final String? pitchVariation;
+  final String? volumeControl;
+  final String? emphasisScore;
+
+  // Detailed Metrics - Structure
+  final bool? hasIntro;
+  final bool? hasBody;
+  final bool? hasConclusion;
+
+  // Detailed Metrics - Vocabulary
+  final int? uniqueWordCount;
+  final int? totalWords;
+  final String? vocabularyRichness;
+
+  // Additional fields
+  final Map<String, dynamic>? detailedAnalysis;
+  final List<String>? suggestions;
+  final String? status;
 
   SpeechModel({
-    required this.id,
-    required this.userId,
-    required this.topic,
-    required this.speechType,
-    required this.recordedAt,
-    required this.duration,
-    required this.audioUrl,
-    required this.overallScore,
-    this.analysis,
+    this.id,
+    this.userId,
+    this.title,
+    this.topic,
+    this.duration,
+    this.createdAt,
+    this.audioUrl,
+    this.transcription,
+    this.overallScore,
+    this.grammarScore,
+    this.voiceScore,
+    this.structureScore,
+    this.effectivenessScore,
+    this.proficiencyScore,
+    this.fillerWordCount,
+    this.pauseCount,
+    this.wordsPerMinute,
+    this.pitchVariation,
+    this.volumeControl,
+    this.emphasisScore,
+    this.hasIntro,
+    this.hasBody,
+    this.hasConclusion,
+    this.uniqueWordCount,
+    this.totalWords,
+    this.vocabularyRichness,
+    this.detailedAnalysis,
+    this.suggestions,
+    this.status,
   });
 
   factory SpeechModel.fromJson(Map<String, dynamic> json) {
+    // Helper to safely get scores from nested structures
+    double? getScore(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      if (value is Map) {
+        // Check for score field in nested object
+        if (value.containsKey('score')) {
+          final score = value['score'];
+          if (score is num) return score.toDouble();
+        }
+        // Check for value field
+        if (value.containsKey('value')) {
+          final val = value['value'];
+          if (val is num) return val.toDouble();
+        }
+      }
+      return 0.0;
+    }
+
+    // Helper to get nested value
+    dynamic getNestedValue(Map<String, dynamic> json, List<String> keys,
+        {dynamic defaultValue}) {
+      dynamic current = json;
+      for (var key in keys) {
+        if (current is Map && current.containsKey(key)) {
+          current = current[key];
+        } else {
+          return defaultValue;
+        }
+      }
+      return current ?? defaultValue;
+    }
+
+    // Get scores from various possible locations
+    final scores = json['scores'] ?? {};
+    final detailedAnalysis = json['detailed_analysis'] ?? json['detailedAnalysis'] ?? {};
+
     return SpeechModel(
-      id: json['id'] ?? '',
-      userId: json['userId'] ?? '',
-      topic: json['topic'] ?? '',
-      speechType: json['speechType'] ?? '',
-      recordedAt: DateTime.parse(json['recordedAt']),
-      duration: json['duration'] ?? 0,
-      audioUrl: json['audioUrl'] ?? '',
-      overallScore: (json['overallScore'] ?? 0).toDouble(),
-      analysis: json['analysis'] != null
-          ? AnalysisResult.fromJson(json['analysis'])
-          : null,
+      id: json['id'] ?? json['analysis_id'],
+      userId: json['user_id'] ?? json['userId'],
+      title: json['speech_title'] ?? json['title'],
+      topic: json['topic'],
+      duration: json['duration'] ?? json['expected_duration'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : (json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'])
+          : DateTime.now()),
+      audioUrl: json['audio_url'] ?? json['audioUrl'],
+      transcription: json['transcription'] ?? detailedAnalysis['transcription'],
+
+      // Overall Score - calculate from category scores if not provided
+      overallScore: json['overall_score']?.toDouble() ??
+          json['overallScore']?.toDouble() ??
+          _calculateOverallScore(scores),
+
+      // Category Scores (0-20 each)
+      grammarScore: getScore(scores['grammar'] ?? scores['vocabulary'] ?? scores['grammar_vocabulary']),
+      voiceScore: getScore(scores['voice'] ?? scores['voice_modulation']),
+      structureScore: getScore(scores['structure'] ?? scores['speech_structure']),
+      effectivenessScore: getScore(scores['effectiveness'] ?? scores['speech_effectiveness']),
+      proficiencyScore: getScore(scores['proficiency']),
+
+      // Fluency Metrics
+      fillerWordCount: getNestedValue(
+        detailedAnalysis,
+        ['fluency', 'filler_words', 'count'],
+        defaultValue: getNestedValue(
+          detailedAnalysis,
+          ['filler_words', 'total_count'],
+          defaultValue: 0,
+        ),
+      ),
+      pauseCount: getNestedValue(
+        detailedAnalysis,
+        ['fluency', 'pauses', 'count'],
+        defaultValue: 0,
+      ),
+      wordsPerMinute: getNestedValue(
+        detailedAnalysis,
+        ['fluency', 'words_per_minute'],
+        defaultValue: 'N/A',
+      )?.toString(),
+
+      // Voice Metrics
+      pitchVariation: getNestedValue(
+        detailedAnalysis,
+        ['voice', 'pitch_variation'],
+        defaultValue: 'N/A',
+      )?.toString(),
+      volumeControl: getNestedValue(
+        detailedAnalysis,
+        ['voice', 'volume_control'],
+        defaultValue: 'N/A',
+      )?.toString(),
+      emphasisScore: getNestedValue(
+        detailedAnalysis,
+        ['voice', 'emphasis'],
+        defaultValue: 'N/A',
+      )?.toString(),
+
+      // Structure Metrics
+      hasIntro: getNestedValue(
+        detailedAnalysis,
+        ['structure', 'has_introduction'],
+        defaultValue: false,
+      ),
+      hasBody: getNestedValue(
+        detailedAnalysis,
+        ['structure', 'has_body'],
+        defaultValue: false,
+      ),
+      hasConclusion: getNestedValue(
+        detailedAnalysis,
+        ['structure', 'has_conclusion'],
+        defaultValue: false,
+      ),
+
+      // Vocabulary Metrics
+      uniqueWordCount: getNestedValue(
+        detailedAnalysis,
+        ['vocabulary', 'unique_words'],
+        defaultValue: 0,
+      ),
+      totalWords: getNestedValue(
+        detailedAnalysis,
+        ['vocabulary', 'total_words'],
+        defaultValue: 0,
+      ),
+      vocabularyRichness: getNestedValue(
+        detailedAnalysis,
+        ['vocabulary', 'richness'],
+        defaultValue: 'N/A',
+      )?.toString(),
+
+      detailedAnalysis: detailedAnalysis,
+      suggestions: (json['suggestions'] as List?)?.cast<String>(),
+      status: json['status'] ?? 'completed',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
+      'user_id': userId,
+      'speech_title': title,
       'topic': topic,
-      'speechType': speechType,
-      'recordedAt': recordedAt.toIso8601String(),
       'duration': duration,
-      'audioUrl': audioUrl,
-      'overallScore': overallScore,
-      'analysis': analysis?.toJson(),
-    };
-  }
-
-  String get formattedDuration {
-    final minutes = duration ~/ 60;
-    final seconds = duration % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  String get speechTypeShort {
-    switch (speechType) {
-      case 'Ice Breaker Speech':
-        return 'Ice Breaker';
-      case 'Prepared Speech':
-        return 'Prepared';
-      case 'Evaluation Speech':
-        return 'Evaluation';
-      case 'Table Topics':
-        return 'Topics';
-      default:
-        return speechType;
-    }
-  }
-}
-
-class AnalysisResult {
-  final double speechDevelopment;
-  final double proficiency;
-  final double voiceAnalysis;
-  final double effectiveness;
-  final double vocabulary;
-  final String transcription;
-  final List<FillerWord> fillerWords;
-  final VocalMetrics vocalMetrics;
-  final List<String> suggestions;
-
-  AnalysisResult({
-    required this.speechDevelopment,
-    required this.proficiency,
-    required this.voiceAnalysis,
-    required this.effectiveness,
-    required this.vocabulary,
-    required this.transcription,
-    required this.fillerWords,
-    required this.vocalMetrics,
-    required this.suggestions,
-  });
-
-  factory AnalysisResult.fromJson(Map<String, dynamic> json) {
-    return AnalysisResult(
-      speechDevelopment: (json['speechDevelopment'] ?? 0).toDouble(),
-      proficiency: (json['proficiency'] ?? 0).toDouble(),
-      voiceAnalysis: (json['voiceAnalysis'] ?? 0).toDouble(),
-      effectiveness: (json['effectiveness'] ?? 0).toDouble(),
-      vocabulary: (json['vocabulary'] ?? 0).toDouble(),
-      transcription: json['transcription'] ?? '',
-      fillerWords: (json['fillerWords'] as List<dynamic>?)
-          ?.map((e) => FillerWord.fromJson(e))
-          .toList() ??
-          [],
-      vocalMetrics: VocalMetrics.fromJson(json['vocalMetrics'] ?? {}),
-      suggestions: List<String>.from(json['suggestions'] ?? []),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'speechDevelopment': speechDevelopment,
-      'proficiency': proficiency,
-      'voiceAnalysis': voiceAnalysis,
-      'effectiveness': effectiveness,
-      'vocabulary': vocabulary,
+      'created_at': createdAt?.toIso8601String(),
+      'audio_url': audioUrl,
       'transcription': transcription,
-      'fillerWords': fillerWords.map((e) => e.toJson()).toList(),
-      'vocalMetrics': vocalMetrics.toJson(),
+      'overall_score': overallScore,
+      'scores': {
+        'grammar': grammarScore,
+        'voice': voiceScore,
+        'structure': structureScore,
+        'effectiveness': effectivenessScore,
+        'proficiency': proficiencyScore,
+      },
+      'detailed_analysis': detailedAnalysis,
       'suggestions': suggestions,
+      'status': status,
     };
   }
 
-  double get averageScore {
-    return (speechDevelopment + proficiency + voiceAnalysis + effectiveness + vocabulary) / 5;
-  }
-}
+  // Calculate overall score from category scores
+  static double _calculateOverallScore(Map<String, dynamic> scores) {
+    if (scores.isEmpty) return 0.0;
 
-class FillerWord {
-  final String word;
-  final int count;
-  final List<int> timestamps; // in seconds
+    double total = 0.0;
+    int count = 0;
 
-  FillerWord({
-    required this.word,
-    required this.count,
-    required this.timestamps,
-  });
+    // Extract scores
+    final grammarScore = _extractScore(scores['grammar'] ?? scores['vocabulary']);
+    final voiceScore = _extractScore(scores['voice'] ?? scores['voice_modulation']);
+    final structureScore = _extractScore(scores['structure'] ?? scores['speech_structure']);
+    final effectivenessScore = _extractScore(scores['effectiveness'] ?? scores['speech_effectiveness']);
+    final proficiencyScore = _extractScore(scores['proficiency']);
 
-  factory FillerWord.fromJson(Map<String, dynamic> json) {
-    return FillerWord(
-      word: json['word'] ?? '',
-      count: json['count'] ?? 0,
-      timestamps: List<int>.from(json['timestamps'] ?? []),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'word': word,
-      'count': count,
-      'timestamps': timestamps,
-    };
-  }
-}
-
-class VocalMetrics {
-  final int wordsPerMinute;
-  final String pitchRange; // Good, Moderate, Needs Improvement
-  final String volumeVariation;
-  final String paceChanges;
-  final double uniqueWordsPercentage;
-
-  VocalMetrics({
-    required this.wordsPerMinute,
-    required this.pitchRange,
-    required this.volumeVariation,
-    required this.paceChanges,
-    required this.uniqueWordsPercentage,
-  });
-
-  factory VocalMetrics.fromJson(Map<String, dynamic> json) {
-    return VocalMetrics(
-      wordsPerMinute: json['wordsPerMinute'] ?? 0,
-      pitchRange: json['pitchRange'] ?? 'Moderate',
-      volumeVariation: json['volumeVariation'] ?? 'Moderate',
-      paceChanges: json['paceChanges'] ?? 'Moderate',
-      uniqueWordsPercentage: (json['uniqueWordsPercentage'] ?? 0).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'wordsPerMinute': wordsPerMinute,
-      'pitchRange': pitchRange,
-      'volumeVariation': volumeVariation,
-      'paceChanges': paceChanges,
-      'uniqueWordsPercentage': uniqueWordsPercentage,
-    };
-  }
-
-  bool get isOptimalSpeakingRate {
-    return wordsPerMinute >= 130 && wordsPerMinute <= 160;
-  }
-}
-
-class UserModel {
-  final String id;
-  final String name;
-  final String email;
-  final DateTime createdAt;
-  final int totalSpeeches;
-  final double averageScore;
-  final String? photoUrl;
-  final bool isPremium;
-
-  UserModel({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.createdAt,
-    this.totalSpeeches = 0,
-    this.averageScore = 0.0,
-    this.photoUrl,
-    this.isPremium = false,
-  });
-
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      createdAt: DateTime.parse(json['createdAt']),
-      totalSpeeches: json['totalSpeeches'] ?? 0,
-      averageScore: (json['averageScore'] ?? 0).toDouble(),
-      photoUrl: json['photoUrl'],
-      isPremium: json['isPremium'] ?? false,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'createdAt': createdAt.toIso8601String(),
-      'totalSpeeches': totalSpeeches,
-      'averageScore': averageScore,
-      'photoUrl': photoUrl,
-      'isPremium': isPremium,
-    };
-  }
-
-  String get initials {
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    if (grammarScore > 0) {
+      total += grammarScore;
+      count++;
     }
-    return name.isNotEmpty ? name[0].toUpperCase() : 'U';
+    if (voiceScore > 0) {
+      total += voiceScore;
+      count++;
+    }
+    if (structureScore > 0) {
+      total += structureScore;
+      count++;
+    }
+    if (effectivenessScore > 0) {
+      total += effectivenessScore;
+      count++;
+    }
+    if (proficiencyScore > 0) {
+      total += proficiencyScore;
+      count++;
+    }
+
+    if (count == 0) return 0.0;
+
+    // Convert to 0-100 scale (each score is 0-20, so multiply by 5)
+    return (total / count) * 5;
   }
 
-  int get memberDays {
-    return DateTime.now().difference(createdAt).inDays;
+  static double _extractScore(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is Map) {
+      if (value.containsKey('score')) {
+        final score = value['score'];
+        if (score is num) return score.toDouble();
+      }
+      if (value.containsKey('value')) {
+        final val = value['value'];
+        if (val is num) return val.toDouble();
+      }
+    }
+    return 0.0;
   }
 }

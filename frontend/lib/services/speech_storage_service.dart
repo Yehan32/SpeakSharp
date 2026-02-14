@@ -50,22 +50,6 @@ class SpeechStorageService {
     }
   }
 
-  static int _parseDurationString(String? durationStr) {
-    if (durationStr == null) return 0;
-    try {
-      final parts = durationStr.split(':');
-      if (parts.length == 2) {
-        final minutes = int.parse(parts[0]);
-        final seconds = int.parse(parts[1]);
-        return (minutes * 60 + seconds);
-      }
-      return 0;
-    } catch (e) {
-      debugPrint('Error parsing duration: $e');
-      return 0;
-    }
-  }
-
   // Get all saved speeches from Firestore
   static Future<List<SpeechModel>> getSpeeches() async {
     try {
@@ -91,42 +75,21 @@ class SpeechStorageService {
 
       return speechDocs.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-
-        try {
-          final durationInSeconds = _parseDurationString(data['actual_duration'] as String?);
-          final audioUrl = data['audio_url'] as String? ?? '';
-
-          return SpeechModel(
-            id: doc.id,
-            userId: user.uid,
-            topic: data['topic'] ?? 'Untitled Speech',
-            speechType: data['speech_type'] ?? 'Prepared Speech',
-            recordedAt: (data['recorded_at'] as Timestamp).toDate(),
-            duration: durationInSeconds,
-            audioUrl: audioUrl,
-            overallScore: (data['overall_score'] as num?)?.toDouble() ?? 0.0,
-            analysis: AnalysisResult(
-              speechDevelopment: (data['speech_development_score'] as num?)?.toDouble() ?? 0.0,
-              proficiency: (data['proficiency_score'] as num?)?.toDouble() ?? 0.0,
-              voiceAnalysis: (data['voice_analysis_score'] as num?)?.toDouble() ?? 0.0,
-              effectiveness: (data['effectiveness_score'] as num?)?.toDouble() ?? 0.0,
-              vocabulary: (data['vocabulary_evaluation_score'] as num?)?.toDouble() ?? 0.0,
-              transcription: data['transcription'] ?? '',
-              fillerWords: [],
-              suggestions: [],
-              vocalMetrics: VocalMetrics(
-                wordsPerMinute: 0,
-                pitchRange: 'Moderate',
-                volumeVariation: 'Moderate',
-                paceChanges: 'Moderate',
-                uniqueWordsPercentage: 0.0,
-              ),
-            ),
-          );
-        } catch (e) {
-          debugPrint('Error creating SpeechModel from document ${doc.id}: $e');
-          rethrow;
+        
+        // Use the factory constructor of SpeechModel to handle data parsing
+        // and consistency between local/remote storage formats.
+        // If Firestore data uses different keys, we may need a specific mapper.
+        
+        Map<String, dynamic> jsonData = Map<String, dynamic>.from(data);
+        jsonData['id'] = doc.id;
+        jsonData['user_id'] = user.uid;
+        
+        // Map Firestore 'recorded_at' (Timestamp) to JSON string expected by fromJson
+        if (data['recorded_at'] is Timestamp) {
+          jsonData['created_at'] = (data['recorded_at'] as Timestamp).toDate().toIso8601String();
         }
+
+        return SpeechModel.fromJson(jsonData);
       }).toList();
 
     } catch (e) {

@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'package:Speak_Sharp/services/api_service.dart';
+import 'package:Speak_Sharp/models/speech_model.dart';
 import '../analysis/feedback_screen.dart';
 
 class PlaybackScreen extends StatefulWidget {
@@ -153,8 +154,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => FeedbackScreen(
-            analysisResults: results,
-            audioPath: widget.audioPath,
+            speech: SpeechModel.fromJson(results),
           ),
         ),
       );

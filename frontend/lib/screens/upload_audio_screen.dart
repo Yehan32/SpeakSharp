@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'package:Speak_Sharp/services/api_service.dart';
+import 'package:Speak_Sharp/models/speech_model.dart';
 import 'package:Speak_Sharp/screens/analysis/feedback_screen.dart';
 
 class UploadAudioScreen extends StatefulWidget {
@@ -101,8 +102,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => FeedbackScreen(
-            analysisResults: result,
-            audioPath: _selectedFile!.path,
+            speech: SpeechModel.fromJson(result),
           ),
         ),
       );
