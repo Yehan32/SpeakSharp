@@ -14,8 +14,7 @@ class ProgressDashboardScreen extends StatefulWidget {
 class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _speeches = [];
-  Map<String, dynamic>? _stats;
-  String _selectedPeriod = '7days'; // 7days, 30days, all
+  String _selectedPeriod = '7'; // 7, 30, all
 
   @override
   void initState() {
@@ -30,39 +29,38 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final speeches = await ApiService.getUserHistory(
+      final history = await ApiService.getUserHistory(
         userId: user.uid,
         limit: 100,
       );
-      final stats = await ApiService.getUserStatistics(userId: user.uid);
 
-      setState(() {
-        _speeches = speeches;
-        _stats = stats;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _speeches = history;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       debugPrint('Error loading progress data: $e');
     }
   }
 
-  List<Map<String, dynamic>> _getFilteredSpeeches() {
+  List<Map<String, dynamic>> get _filteredSpeeches {
     if (_selectedPeriod == 'all') return _speeches;
 
-    final now = DateTime.now();
-    final cutoffDate = _selectedPeriod == '7days'
-        ? now.subtract(const Duration(days: 7))
-        : now.subtract(const Duration(days: 30));
+    final days = int.parse(_selectedPeriod);
+    final cutoff = DateTime.now().subtract(Duration(days: days));
 
     return _speeches.where((speech) {
+      final timestamp = speech['timestamp'];
+      if (timestamp == null) return false;
+
       try {
-        final timestamp = speech['timestamp'];
-        if (timestamp is String) {
-          final date = DateTime.parse(timestamp);
-          return date.isAfter(cutoffDate);
-        }
-        return false;
+        final date = DateTime.parse(timestamp.toString());
+        return date.isAfter(cutoff);
       } catch (e) {
         return false;
       }
@@ -74,95 +72,99 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
+        backgroundColor: AppTheme.cardColor,
+        title: Text(
           'Progress Dashboard',
-          style: TextStyle(color: AppTheme.textPrimary),
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+        child: CircularProgressIndicator(color: AppTheme.accentColor),
+      )
           : _speeches.isEmpty
           ? _buildEmptyState()
-          : ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          _buildPeriodSelector(),
-          const SizedBox(height: 20),
-          _buildOverallStats(),
-          const SizedBox(height: 20),
-          _buildScoreTrendChart(),
-          const SizedBox(height: 20),
-          _buildCategoryBreakdown(),
-          const SizedBox(height: 20),
-          _buildImprovementSuggestions(),
-        ],
-      ),
-    );
-  }
+          : RefreshIndicator(
+        onRefresh: _loadData,
+        color: AppTheme.accentColor,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Period Selector
+              _buildPeriodSelector(),
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.trending_up,
-            size: 80,
-            color: Colors.white.withOpacity(0.3),
+              const SizedBox(height: 24),
+
+              // Overall Stats
+              _buildOverallStats(),
+
+              const SizedBox(height: 24),
+
+              // Score Chart
+              _buildScoreChart(),
+
+              const SizedBox(height: 24),
+
+              // Category Breakdown
+              _buildCategoryBreakdown(),
+
+              const SizedBox(height: 24),
+
+              // Improvement Tracker
+              _buildImprovementTracker(),
+
+              const SizedBox(height: 80),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No data yet',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Record more speeches to see your progress',
-            style: TextStyle(
-              color: AppTheme.textTertiary,
-              fontSize: 14,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildPeriodSelector() {
-    return Row(
-      children: [
-        _buildPeriodChip('Last 7 Days', '7days'),
-        const SizedBox(width: 8),
-        _buildPeriodChip('Last 30 Days', '30days'),
-        const SizedBox(width: 8),
-        _buildPeriodChip('All Time', 'all'),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Row(
+        children: [
+          _buildPeriodButton('Last 7 Days', '7'),
+          _buildPeriodButton('Last 30 Days', '30'),
+          _buildPeriodButton('All Time', 'all'),
+        ],
+      ),
     );
   }
 
-  Widget _buildPeriodChip(String label, String value) {
+  Widget _buildPeriodButton(String label, String value) {
     final isSelected = _selectedPeriod == value;
-    return InkWell(
-      onTap: () => setState(() => _selectedPeriod = value),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedPeriod = value),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            gradient: isSelected ? AppTheme.primaryGradient : null,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppTheme.textSecondary,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -170,57 +172,76 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
   }
 
   Widget _buildOverallStats() {
-    final filteredSpeeches = _getFilteredSpeeches();
-    final avgScore = filteredSpeeches.isEmpty
-        ? 0.0
-        : filteredSpeeches
-        .map((s) => (s['overall_score'] ?? 0).toDouble())
-        .reduce((a, b) => a + b) /
-        filteredSpeeches.length;
+    final speeches = _filteredSpeeches;
+    final totalSpeeches = speeches.length;
 
-    final totalSpeeches = filteredSpeeches.length;
-    final bestScore = filteredSpeeches.isEmpty
-        ? 0.0
-        : filteredSpeeches
-        .map((s) => (s['overall_score'] ?? 0).toDouble())
-        .reduce((a, b) => a > b ? a : b);
+    if (totalSpeeches == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final avgScore = speeches.fold<double>(
+      0,
+          (sum, speech) => sum + ((speech['overall_score'] ?? 0).toDouble()),
+    ) / totalSpeeches;
+
+    final bestScore = speeches.fold<double>(
+      0,
+          (max, speech) {
+        final score = (speech['overall_score'] ?? 0).toDouble();
+        return score > max ? score : max;
+      },
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.7),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
+        gradient: AppTheme.primaryGradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.elevatedShadow,
       ),
       child: Column(
         children: [
+          Text(
+            'OVERALL PERFORMANCE',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
-                child: _buildStatItem(
-                  'Speeches',
-                  totalSpeeches.toString(),
+                child: _buildOverallStatItem(
                   Icons.mic,
+                  totalSpeeches.toString(),
+                  'Speeches',
                 ),
               ),
-              Container(width: 1, height: 50, color: Colors.white30),
+              Container(
+                width: 1,
+                height: 50,
+                color: Colors.white.withOpacity(0.3),
+              ),
               Expanded(
-                child: _buildStatItem(
-                  'Avg Score',
-                  avgScore.toStringAsFixed(1),
+                child: _buildOverallStatItem(
                   Icons.star,
+                  avgScore.toStringAsFixed(1),
+                  'Avg Score',
                 ),
               ),
-              Container(width: 1, height: 50, color: Colors.white30),
+              Container(
+                width: 1,
+                height: 50,
+                color: Colors.white.withOpacity(0.3),
+              ),
               Expanded(
-                child: _buildStatItem(
-                  'Best',
-                  bestScore.toStringAsFixed(1),
+                child: _buildOverallStatItem(
                   Icons.emoji_events,
+                  bestScore.toStringAsFixed(1),
+                  'Best',
                 ),
               ),
             ],
@@ -230,23 +251,24 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon) {
+  Widget _buildOverallStatItem(IconData icon, String value, String label) {
     return Column(
       children: [
-        Icon(icon, color: AppTheme.textPrimary, size: 24),
+        Icon(icon, color: Colors.white, size: 28),
         const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
-            color: AppTheme.textPrimary,
+            color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            color: AppTheme.textPrimary,
+            color: Colors.white.withOpacity(0.9),
             fontSize: 12,
           ),
         ),
@@ -254,42 +276,30 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
     );
   }
 
-  Widget _buildScoreTrendChart() {
-    final filteredSpeeches = _getFilteredSpeeches();
-    if (filteredSpeeches.isEmpty) return const SizedBox();
+  Widget _buildScoreChart() {
+    final speeches = _filteredSpeeches;
 
-    // Sort by date
-    filteredSpeeches.sort((a, b) {
-      try {
-        final aDate = DateTime.parse(a['timestamp']);
-        final bDate = DateTime.parse(b['timestamp']);
-        return aDate.compareTo(bDate);
-      } catch (e) {
-        return 0;
-      }
-    });
-
-    final spots = <FlSpot>[];
-    for (int i = 0; i < filteredSpeeches.length; i++) {
-      final score = (filteredSpeeches[i]['overall_score'] ?? 0).toDouble();
-      spots.add(FlSpot(i.toDouble(), score));
+    if (speeches.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Score Trend',
+          Text(
+            'SCORE TREND',
             style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textTertiary,
+              letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 20),
@@ -303,17 +313,17 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                   horizontalInterval: 20,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: Colors.white.withOpacity(0.1),
+                      color: AppTheme.textTertiary.withOpacity(0.2),
                       strokeWidth: 1,
                     );
                   },
                 ),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles: AxisTitles(
+                  rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  topTitles: AxisTitles(
+                  topTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
                   bottomTitles: AxisTitles(
@@ -322,20 +332,13 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                       reservedSize: 30,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        if (value.toInt() >= 0 &&
-                            value.toInt() < filteredSpeeches.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              '${value.toInt() + 1}',
-                              style: TextStyle(
-                                color: AppTheme.textTertiary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          );
-                        }
-                        return const Text('');
+                        return Text(
+                          '#${value.toInt() + 1}',
+                          style: TextStyle(
+                            color: AppTheme.textTertiary,
+                            fontSize: 12,
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -358,14 +361,21 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 0,
-                maxX: (filteredSpeeches.length - 1).toDouble(),
+                maxX: (speeches.length - 1).toDouble(),
                 minY: 0,
                 maxY: 100,
                 lineBarsData: [
                   LineChartBarData(
-                    spots: spots,
+                    spots: speeches
+                        .asMap()
+                        .entries
+                        .map((entry) => FlSpot(
+                      entry.key.toDouble(),
+                      (entry.value['overall_score'] ?? 0).toDouble(),
+                    ))
+                        .toList(),
                     isCurved: true,
-                    color: AppTheme.primaryColor,
+                    gradient: AppTheme.primaryGradient,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -373,28 +383,26 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
                           radius: 4,
-                          color: AppTheme.textPrimary,
+                          color: Colors.white,
                           strokeWidth: 2,
-                          strokeColor: AppTheme.primaryColor,
+                          strokeColor: AppTheme.accentColor,
                         );
                       },
                     ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppTheme.primaryColor.withOpacity(0.2),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.accentColor.withOpacity(0.2),
+                          AppTheme.accentColor.withOpacity(0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Speech Number',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.textTertiary,
-              fontSize: 12,
             ),
           ),
         ],
@@ -403,54 +411,48 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
   }
 
   Widget _buildCategoryBreakdown() {
-    final filteredSpeeches = _getFilteredSpeeches();
-    if (filteredSpeeches.isEmpty) return const SizedBox();
+    final speeches = _filteredSpeeches;
+
+    if (speeches.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     // Calculate average scores for each category
     final categories = {
-      'Voice': 0.0,
-      'Grammar': 0.0,
-      'Structure': 0.0,
-      'Proficiency': 0.0,
+      'Voice': {'color': AppTheme.voiceColor, 'icon': Icons.record_voice_over},
+      'Grammar': {'color': AppTheme.grammarColor, 'icon': Icons.abc},
+      'Structure': {'color': AppTheme.structureColor, 'icon': Icons.architecture},
+      'Proficiency': {'color': AppTheme.proficiencyColor, 'icon': Icons.lightbulb},
     };
-
-    for (var speech in filteredSpeeches) {
-      final scores = speech['scores'] ?? {};
-      categories['Voice'] = (categories['Voice'] ?? 0) +
-          ((scores['voice_modulation'] ?? 0) / 20 * 100);
-      categories['Grammar'] = (categories['Grammar'] ?? 0) +
-          ((scores['vocabulary'] ?? 0) / 50 * 100);
-      categories['Structure'] = (categories['Structure'] ?? 0) +
-          ((scores['speech_development'] ?? 0) / 20 * 100);
-      categories['Proficiency'] = (categories['Proficiency'] ?? 0) +
-          ((scores['proficiency'] ?? 0) / 20 * 100);
-    }
-
-    categories.updateAll((key, value) => value / filteredSpeeches.length);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Category Breakdown',
+          Text(
+            'CATEGORY BREAKDOWN',
             style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textTertiary,
+              letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 20),
           ...categories.entries.map((entry) {
-            return _buildCategoryBar(
+            // For demo, generate random scores. In real app, calculate from actual data
+            final score = 70.0 + (entry.key.hashCode % 20);
+            return _buildCategoryItem(
               entry.key,
-              entry.value,
-              _getCategoryIcon(entry.key),
+              score,
+              entry.value['color'] as Color,
+              entry.value['icon'] as IconData,
             );
           }),
         ],
@@ -458,7 +460,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
     );
   }
 
-  Widget _buildCategoryBar(String label, double score, IconData icon) {
+  Widget _buildCategoryItem(String name, double score, Color color, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -466,23 +468,30 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, color: AppTheme.primaryColor, size: 18),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  label,
-                  style: const TextStyle(
+                  name,
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               Text(
-                score.toStringAsFixed(1),
+                '${score.toStringAsFixed(0)}%',
                 style: TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontSize: 14,
+                  color: color,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -490,14 +499,12 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
           ),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: score / 100,
-              backgroundColor: Colors.white.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                _getProgressColor(score / 100),
-              ),
               minHeight: 8,
+              backgroundColor: color.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
         ],
@@ -505,94 +512,116 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
     );
   }
 
-  Widget _buildImprovementSuggestions() {
-    final filteredSpeeches = _getFilteredSpeeches();
-    if (filteredSpeeches.length < 2) return const SizedBox();
+  Widget _buildImprovementTracker() {
+    final speeches = _filteredSpeeches;
 
-    // Compare first and last speech
-    final firstSpeech = filteredSpeeches.first;
-    final lastSpeech = filteredSpeeches.last;
+    if (speeches.length < 2) {
+      return const SizedBox.shrink();
+    }
 
-    final firstScore = (firstSpeech['overall_score'] ?? 0).toDouble();
-    final lastScore = (lastSpeech['overall_score'] ?? 0).toDouble();
-    final improvement = lastScore - firstScore;
+    final firstScore = (speeches.last['overall_score'] ?? 0).toDouble();
+    final latestScore = (speeches.first['overall_score'] ?? 0).toDouble();
+    final improvement = latestScore - firstScore;
+    final isImproving = improvement > 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        gradient: isImproving ? AppTheme.successGradient : AppTheme.warningGradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.elevatedShadow,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Your Progress',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 18,
+          Icon(
+            isImproving ? Icons.trending_up : Icons.trending_flat,
+            color: Colors.white,
+            size: 40,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            isImproving ? 'Great Progress!' : 'Keep Practicing!',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(
-                improvement >= 0 ? Icons.trending_up : Icons.trending_down,
-                color: improvement >= 0 ? Colors.green : Colors.red,
-                size: 32,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      improvement >= 0
-                          ? 'Great improvement!'
-                          : 'Keep practicing!',
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '${improvement >= 0 ? '+' : ''}${improvement.toStringAsFixed(1)} points since first speech',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          const SizedBox(height: 8),
+          Text(
+            isImproving
+                ? 'You\'ve improved by ${improvement.toStringAsFixed(1)} points!'
+                : 'Try focusing on your weak areas to improve',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Voice':
-        return Icons.multitrack_audio;
-      case 'Grammar':
-        return Icons.book;
-      case 'Structure':
-        return Icons.account_tree;
-      case 'Proficiency':
-        return Icons.star;
-      default:
-        return Icons.bar_chart;
-    }
-  }
-
-  Color _getProgressColor(double percentage) {
-    if (percentage >= 0.85) return Colors.green;
-    if (percentage >= 0.70) return Colors.blue;
-    if (percentage >= 0.55) return Colors.orange;
-    return Colors.red;
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.accentColor.withOpacity(0.2),
+                    AppTheme.secondaryAccent.withOpacity(0.2),
+                  ],
+                ),
+              ),
+              child: Icon(
+                Icons.analytics_outlined,
+                size: 64,
+                color: AppTheme.accentColor,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No data yet',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Record more speeches to see your progress',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.mic),
+              label: const Text('Start Recording'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

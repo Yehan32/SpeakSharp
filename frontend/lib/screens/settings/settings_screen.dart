@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,50 +10,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Settings values
-  bool _notificationsEnabled = true;
-  bool _autoSaveEnabled = true;
-  bool _darkModeEnabled = true;
-  String _defaultAnalysisDepth = 'standard';
-  String _defaultDuration = '5-7 minutes';
-  double _audioQuality = 1.0; // 0: Low, 0.5: Medium, 1: High
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-      _autoSaveEnabled = prefs.getBool('auto_save_enabled') ?? true;
-      _darkModeEnabled = prefs.getBool('dark_mode_enabled') ?? true;
-      _defaultAnalysisDepth = prefs.getString('default_analysis_depth') ?? 'standard';
-      _defaultDuration = prefs.getString('default_duration') ?? '5-7 minutes';
-      _audioQuality = prefs.getDouble('audio_quality') ?? 1.0;
-    });
-  }
-
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notifications_enabled', _notificationsEnabled);
-    await prefs.setBool('auto_save_enabled', _autoSaveEnabled);
-    await prefs.setBool('dark_mode_enabled', _darkModeEnabled);
-    await prefs.setString('default_analysis_depth', _defaultAnalysisDepth);
-    await prefs.setString('default_duration', _defaultDuration);
-    await prefs.setDouble('audio_quality', _audioQuality);
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Settings saved'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
+  String _analysisDepth = 'standard';
+  String _expectedDuration = '5-7 minutes';
+  bool _autoSave = true;
+  bool _pushNotifications = true;
+  bool _darkMode = false;
+  double _audioQuality = 0.8;
 
   @override
   Widget build(BuildContext context) {
@@ -63,11 +24,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
+        backgroundColor: AppTheme.cardColor,
+        title: Text(
           'Settings',
-          style: TextStyle(color: AppTheme.textPrimary),
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           TextButton(
@@ -75,8 +38,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               'Save',
               style: TextStyle(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.bold,
+                color: AppTheme.accentColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
               ),
             ),
           ),
@@ -86,129 +50,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           // Account Section
-          _buildSectionHeader('Account'),
-          _buildAccountInfo(user),
-          const SizedBox(height: 24),
+          _buildSectionHeader('ACCOUNT', Icons.person, AppTheme.voiceColor),
+          const SizedBox(height: 12),
+          _buildAccountCard(user),
 
-          // Analysis Preferences
-          _buildSectionHeader('Analysis Preferences'),
-          _buildSettingsTile(
-            'Default Analysis Depth',
-            _defaultAnalysisDepth.toUpperCase(),
-            Icons.analytics,
-            onTap: () => _showAnalysisDepthPicker(),
-          ),
-          _buildSettingsTile(
-            'Default Duration',
-            _defaultDuration,
-            Icons.timer,
-            onTap: () => _showDurationPicker(),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Recording Settings
-          _buildSectionHeader('Recording'),
-          _buildAudioQualitySlider(),
-          _buildSwitchTile(
-            'Auto-save Recordings',
-            'Automatically save speeches to history',
-            Icons.save,
-            _autoSaveEnabled,
-                (value) => setState(() => _autoSaveEnabled = value),
-          ),
-          const SizedBox(height: 24),
+          // Analysis Preferences Section
+          _buildSectionHeader('ANALYSIS PREFERENCES', Icons.analytics, AppTheme.grammarColor),
+          const SizedBox(height: 12),
+          _buildAnalysisPreferences(),
 
-          // Notifications
-          _buildSectionHeader('Notifications'),
-          _buildSwitchTile(
-            'Push Notifications',
-            'Receive reminders and updates',
-            Icons.notifications,
-            _notificationsEnabled,
-                (value) => setState(() => _notificationsEnabled = value),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Appearance
-          _buildSectionHeader('Appearance'),
-          _buildSwitchTile(
-            'Dark Mode',
-            'Use dark theme (always on)',
-            Icons.dark_mode,
-            _darkModeEnabled,
-                (value) => setState(() => _darkModeEnabled = value),
-          ),
-          const SizedBox(height: 24),
+          // Recording Settings Section
+          _buildSectionHeader('RECORDING', Icons.mic, AppTheme.structureColor),
+          const SizedBox(height: 12),
+          _buildRecordingSettings(),
 
-          // Data & Privacy
-          _buildSectionHeader('Data & Privacy'),
-          _buildSettingsTile(
-            'Clear Cache',
-            'Free up storage space',
-            Icons.delete_outline,
-            onTap: _clearCache,
-          ),
-          _buildSettingsTile(
-            'Export Data',
-            'Download your speech history',
-            Icons.download,
-            onTap: _exportData,
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Account Actions
-          _buildSectionHeader('Account Actions'),
-          _buildSettingsTile(
-            'Change Password',
-            'Update your password',
-            Icons.lock_outline,
-            onTap: _changePassword,
-          ),
-          _buildSettingsTile(
-            'Delete Account',
-            'Permanently delete your account',
-            Icons.warning_amber,
-            onTap: _deleteAccount,
-            isDestructive: true,
-          ),
+          // Notifications Section
+          _buildSectionHeader('NOTIFICATIONS', Icons.notifications, AppTheme.proficiencyColor),
+          const SizedBox(height: 12),
+          _buildNotifications(),
+
+          const SizedBox(height: 32),
+
+          // Appearance Section
+          _buildSectionHeader('APPEARANCE', Icons.palette, AppTheme.accentColor),
+          const SizedBox(height: 12),
+          _buildAppearance(),
+
+          const SizedBox(height: 32),
+
+          // Data & Privacy Section
+          _buildSectionHeader('DATA & PRIVACY', Icons.security, AppTheme.textPrimary),
+          const SizedBox(height: 12),
+          _buildDataPrivacy(),
+
+          const SizedBox(height: 32),
+
+          // Account Actions Section
+          _buildSectionHeader('ACCOUNT ACTIONS', Icons.warning_amber, AppTheme.errorColor),
+          const SizedBox(height: 12),
+          _buildAccountActions(),
+
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          color: AppTheme.textTertiary,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1,
+  Widget _buildSectionHeader(String title, IconData icon, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 16),
         ),
-      ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textTertiary,
+            letterSpacing: 1,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAccountInfo(User? user) {
+  Widget _buildAccountCard(User? user) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: AppTheme.voiceColor.withOpacity(0.2),
+          width: 2,
+        ),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: AppTheme.primaryColor,
-            child: Text(
-              user?.email?[0].toUpperCase() ?? 'U',
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: AppTheme.primaryGradient,
+            ),
+            child: Center(
+              child: Text(
+                _getInitials(user),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -219,10 +166,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   user?.displayName ?? 'User',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -230,8 +177,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   user?.email ?? '',
                   style: TextStyle(
                     color: AppTheme.textSecondary,
-                    fontSize: 13,
+                    fontSize: 14,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -241,92 +189,285 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingsTile(
-      String title,
-      String subtitle,
-      IconData icon, {
-        VoidCallback? onTap,
-        bool isDestructive = false,
-      }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildAnalysisPreferences() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: AppTheme.grammarColor.withOpacity(0.2),
+          width: 2,
         ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isDestructive ? Colors.red : AppTheme.textSecondary,
-              size: 24,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: isDestructive ? Colors.red : Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: AppTheme.textTertiary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(0.3),
-              size: 16,
-            ),
-          ],
-        ),
+      ),
+      child: Column(
+        children: [
+          _buildDropdownSetting(
+            icon: Icons.analytics,
+            title: 'Analysis Depth',
+            value: _analysisDepth,
+            items: [
+              {'value': 'basic', 'label': 'Basic'},
+              {'value': 'standard', 'label': 'Standard - Recommended'},
+              {'value': 'advanced', 'label': 'Advanced'},
+            ],
+            onChanged: (value) => setState(() => _analysisDepth = value!),
+            color: AppTheme.grammarColor,
+          ),
+          Divider(height: 1, color: AppTheme.textTertiary.withOpacity(0.1)),
+          _buildDropdownSetting(
+            icon: Icons.timer,
+            title: 'Expected Duration',
+            value: _expectedDuration,
+            items: [
+              {'value': '1-3 minutes', 'label': '1-3 minutes'},
+              {'value': '3-5 minutes', 'label': '3-5 minutes'},
+              {'value': '5-7 minutes', 'label': '5-7 minutes'},
+              {'value': '7-10 minutes', 'label': '7-10 minutes'},
+            ],
+            onChanged: (value) => setState(() => _expectedDuration = value!),
+            color: AppTheme.grammarColor,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSwitchTile(
-      String title,
-      String subtitle,
-      IconData icon,
-      bool value,
-      ValueChanged<bool> onChanged,
-      ) {
+  Widget _buildRecordingSettings() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: AppTheme.structureColor.withOpacity(0.2),
+          width: 2,
+        ),
       ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.structureColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.hd, color: AppTheme.structureColor, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Audio Quality',
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Higher quality uses more storage',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      _audioQuality > 0.7 ? 'High' : _audioQuality > 0.4 ? 'Medium' : 'Low',
+                      style: TextStyle(
+                        color: AppTheme.structureColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SliderTheme(
+                  data: SliderThemeData(
+                    activeTrackColor: AppTheme.structureColor,
+                    inactiveTrackColor: AppTheme.structureColor.withOpacity(0.2),
+                    thumbColor: AppTheme.structureColor,
+                    overlayColor: AppTheme.structureColor.withOpacity(0.2),
+                    trackHeight: 6,
+                  ),
+                  child: Slider(
+                    value: _audioQuality,
+                    onChanged: (value) => setState(() => _audioQuality = value),
+                    min: 0.0,
+                    max: 1.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: AppTheme.textTertiary.withOpacity(0.1)),
+          _buildSwitchSetting(
+            icon: Icons.save,
+            title: 'Auto-save Recordings',
+            subtitle: 'Automatically save speeches to history',
+            value: _autoSave,
+            onChanged: (value) => setState(() => _autoSave = value),
+            color: AppTheme.structureColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotifications() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: AppTheme.proficiencyColor.withOpacity(0.2),
+          width: 2,
+        ),
+      ),
+      child: _buildSwitchSetting(
+        icon: Icons.notifications_active,
+        title: 'Push Notifications',
+        subtitle: 'Receive reminders and updates',
+        value: _pushNotifications,
+        onChanged: (value) => setState(() => _pushNotifications = value),
+        color: AppTheme.proficiencyColor,
+      ),
+    );
+  }
+
+  Widget _buildAppearance() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: AppTheme.accentColor.withOpacity(0.2),
+          width: 2,
+        ),
+      ),
+      child: _buildSwitchSetting(
+        icon: Icons.dark_mode,
+        title: 'Dark Mode',
+        subtitle: 'Use dark theme (always on)',
+        value: _darkMode,
+        onChanged: (value) => setState(() => _darkMode = value),
+        color: AppTheme.accentColor,
+      ),
+    );
+  }
+
+  Widget _buildDataPrivacy() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: AppTheme.textSecondary.withOpacity(0.2),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildActionSetting(
+            icon: Icons.delete_sweep,
+            title: 'Free up storage space',
+            subtitle: 'Delete old recordings',
+            onTap: _showComingSoon,
+            color: AppTheme.textSecondary,
+          ),
+          Divider(height: 1, color: AppTheme.textTertiary.withOpacity(0.1)),
+          _buildActionSetting(
+            icon: Icons.download,
+            title: 'Download your speech history',
+            subtitle: 'Export all your data',
+            onTap: _showComingSoon,
+            color: AppTheme.textSecondary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountActions() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: AppTheme.errorColor.withOpacity(0.2),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildActionSetting(
+            icon: Icons.lock,
+            title: 'Update your password',
+            subtitle: 'Change account password',
+            onTap: _showComingSoon,
+            color: AppTheme.textSecondary,
+          ),
+          Divider(height: 1, color: AppTheme.textTertiary.withOpacity(0.1)),
+          _buildActionSetting(
+            icon: Icons.warning,
+            title: 'Delete Account',
+            subtitle: 'Permanently delete your account',
+            onTap: _confirmDeleteAccount,
+            color: AppTheme.errorColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchSetting({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required Color color,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(icon, color: AppTheme.textSecondary, size: 24),
-          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -334,7 +475,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: AppTheme.textTertiary,
+                    color: AppTheme.textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -344,264 +485,213 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppTheme.primaryColor,
+            activeColor: color,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAudioQualitySlider() {
-    return Container(
+  Widget _buildDropdownSetting({
+    required IconData icon,
+    required String title,
+    required String value,
+    required List<Map<String, String>> items,
+    required ValueChanged<String?> onChanged,
+    required Color color,
+  }) {
+    return Padding(
       padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              const Icon(Icons.high_quality, color: AppTheme.textSecondary, size: 24),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Audio Quality',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Higher quality uses more storage',
-                      style: TextStyle(
-                        color: AppTheme.textTertiary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                _getQualityLabel(),
-                style: TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: AppTheme.primaryColor,
-              inactiveTrackColor: Colors.white.withOpacity(0.2),
-              thumbColor: AppTheme.primaryColor,
-              overlayColor: AppTheme.primaryColor.withOpacity(0.3),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Slider(
-              value: _audioQuality,
-              min: 0,
-              max: 1,
-              divisions: 2,
-              onChanged: (value) => setState(() => _audioQuality = value),
-            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-        ],
-      ),
-    );
-  }
-
-  String _getQualityLabel() {
-    if (_audioQuality == 0) return 'Low';
-    if (_audioQuality == 0.5) return 'Medium';
-    return 'High';
-  }
-
-  void _showAnalysisDepthPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 16),
-            const Text(
-              'Default Analysis Depth',
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
               style: TextStyle(
                 color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 16),
-            _buildDepthOption('Basic', 'basic', 'Faster analysis'),
-            _buildDepthOption('Standard', 'standard', 'Recommended'),
-            _buildDepthOption('Advanced', 'advanced', 'Most detailed'),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDepthOption(String label, String value, String desc) {
-    return ListTile(
-      leading: Icon(
-        _defaultAnalysisDepth == value
-            ? Icons.radio_button_checked
-            : Icons.radio_button_unchecked,
-        color: _defaultAnalysisDepth == value
-            ? AppTheme.primaryColor
-            : AppTheme.textTertiary,
-      ),
-      title: Text(label, style: const TextStyle(color: AppTheme.textPrimary)),
-      subtitle: Text(desc, style: const TextStyle(color: AppTheme.textTertiary)),
-      onTap: () {
-        setState(() => _defaultAnalysisDepth = value);
-        Navigator.pop(context);
-      },
-    );
-  }
-
-  void _showDurationPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 16),
-            const Text(
-              'Default Duration',
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...['1-2 minutes', '3-5 minutes', '5-7 minutes', '7-10 minutes']
-                .map((d) => _buildDurationOption(d)),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDurationOption(String duration) {
-    return ListTile(
-      leading: Icon(
-        _defaultDuration == duration
-            ? Icons.radio_button_checked
-            : Icons.radio_button_unchecked,
-        color: _defaultDuration == duration
-            ? AppTheme.primaryColor
-            : AppTheme.textTertiary,
-      ),
-      title: Text(duration, style: const TextStyle(color: AppTheme.textPrimary)),
-      onTap: () {
-        setState(() => _defaultDuration = duration);
-        Navigator.pop(context);
-      },
-    );
-  }
-
-  void _clearCache() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardColor,
-        title: const Text('Clear Cache?', style: TextStyle(color: AppTheme.textPrimary)),
-        content: const Text(
-          'This will free up storage space but may slow down the app temporarily.',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Cache cleared successfully'),
-                  backgroundColor: Colors.green,
+          DropdownButton<String>(
+            value: value,
+            items: items.map((item) {
+              return DropdownMenuItem(
+                value: item['value'],
+                child: Text(
+                  item['label']!,
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 14,
+                  ),
                 ),
               );
-            },
-            child: const Text('Clear'),
+            }).toList(),
+            onChanged: onChanged,
+            underline: const SizedBox(),
+            icon: Icon(Icons.arrow_drop_down, color: color),
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _exportData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export feature coming soon'),
-        backgroundColor: Colors.blue,
+  Widget _buildActionSetting({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required Color color,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: color == AppTheme.errorColor ? color : AppTheme.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppTheme.textTertiary,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _changePassword() {
+  void _saveSettings() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password change feature coming soon'),
-        backgroundColor: Colors.blue,
+      SnackBar(
+        content: const Text('Settings saved successfully'),
+        backgroundColor: AppTheme.successColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
-  void _deleteAccount() {
+  void _showComingSoon() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardColor,
-        title: const Text(
-          'Delete Account?',
-          style: TextStyle(color: AppTheme.textPrimary),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Coming Soon',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        content: const Text(
-          'This action is permanent and cannot be undone. All your data will be deleted.',
+        content: Text(
+          'This feature is under development.',
           style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              'OK',
+              style: TextStyle(color: AppTheme.accentColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAccount() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(
+            color: AppTheme.errorColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete your account? This action cannot be undone.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Implement account deletion
+              _showComingSoon();
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
+  }
+
+  String _getInitials(User? user) {
+    if (user?.displayName != null && user!.displayName!.isNotEmpty) {
+      final parts = user.displayName!.split(' ');
+      if (parts.length >= 2) {
+        return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      }
+      return user.displayName![0].toUpperCase();
+    }
+    return user?.email?[0].toUpperCase() ?? 'U';
   }
 }
