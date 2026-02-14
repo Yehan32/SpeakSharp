@@ -22,6 +22,121 @@ from app.utils.exceptions import SpeakSharpException, AudioProcessingError, Anal
 settings = Settings()
 logger = setup_logger(__name__)
 
+# =====================
+# Helper Functions
+# =====================
+
+def calculate_overall_score(scores: Dict[str, Any]) -> float:
+    """
+    Calculate overall score (0-100) from category scores (0-20)
+    
+    Args:
+        scores: Dictionary of category scores
+        
+    Returns:
+        Overall score on 0-100 scale
+    """
+    def extract_score(value):
+        """Extract numeric score from various formats"""
+        if value is None:
+            return 0.0
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, dict):
+            # Check for 'score' field
+            if 'score' in value:
+                return float(value['score']) if isinstance(value['score'], (int, float)) else 0.0
+            # Check for 'value' field
+            if 'value' in value:
+                return float(value['value']) if isinstance(value['value'], (int, float)) else 0.0
+        return 0.0
+    
+    # Extract category scores (each should be 0-20)
+    category_scores = [
+        extract_score(scores.get('grammar', 0)),
+        extract_score(scores.get('voice', 0)),
+        extract_score(scores.get('structure', 0)),
+        extract_score(scores.get('effectiveness', 0)),
+        extract_score(scores.get('proficiency', 0)),
+    ]
+    
+    # Filter out zeros (in case some analyzers didn't run)
+    valid_scores = [s for s in category_scores if s > 0]
+    
+    if not valid_scores:
+        return 0.0
+    
+    # Calculate average of category scores (0-20 range)
+    average_score = sum(valid_scores) / len(valid_scores)
+    
+    # Convert to 0-100 scale
+    overall_score = (average_score / 20) * 100
+    
+    return round(overall_score, 1)
+
+
+def build_response(
+    analysis_results: Dict[str, Any],
+    analysis_id: str,
+    user_id: str,
+    speech_title: Optional[str],
+    topic: Optional[str],
+    duration: str,
+    processing_time: float
+) -> Dict[str, Any]:
+    """
+    Build properly formatted response for Flutter app
+    
+    Args:
+        analysis_results: Raw analysis results from speech service
+        analysis_id: Unique analysis ID
+        user_id: User identifier
+        speech_title: Title of the speech
+        topic: Speech topic
+        duration: Expected duration
+        processing_time: Time taken for analysis
+        
+    Returns:
+        Formatted response dictionary
+    """
+    scores = analysis_results.get('scores', {})
+    
+    # Calculate overall score if not provided
+    overall_score = analysis_results.get('overall_score')
+    if overall_score is None:
+        overall_score = calculate_overall_score(scores)
+    
+    # Build response
+    response = {
+        'analysis_id': analysis_id,
+        'status': 'completed',
+        'user_id': user_id,
+        'speech_title': speech_title,
+        'topic': topic,
+        'duration': duration,
+        'timestamp': datetime.now().isoformat(),
+        'processing_time': round(processing_time, 2),
+        
+        # Overall score (0-100)
+        'overall_score': overall_score,
+        
+        # Category scores (0-20 each)
+        'scores': scores,
+        
+        # Transcription
+        'transcription': analysis_results.get('transcription', ''),
+        
+        # Detailed analysis
+        'detailed_analysis': analysis_results.get('detailed_analysis', {}),
+        
+        # Suggestions (if available)
+        'suggestions': analysis_results.get('suggestions', []),
+    }
+    
+    logger.info(f"Built response with overall_score: {overall_score}")
+    return response
+
+
 # Lifespan context manager for startup/shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,7 +157,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Cleanup
-    logger.info("Shutting down  Backend...")
+    logger.info("Shutting down Backend...")
     await app.state.speech_service.cleanup()
 
 # Create FastAPI app
@@ -79,6 +194,7 @@ class AnalysisResponse(BaseModel):
     """Response model for speech analysis"""
     analysis_id: str
     status: str
+    overall_score: float
     scores: Dict[str, Any]
     transcription: Optional[str]
     detailed_analysis: Dict[str, Any]
@@ -189,27 +305,34 @@ async def analyze_speech(
         # Calculate processing time
         processing_time = (datetime.now() - analysis_start_time).total_seconds()
         
-        # Save results to storage
-        analysis_id = await storage_service.save_analysis(
+        # Generate analysis ID (you might want to use UUID here)
+        from uuid import uuid4
+        analysis_id = f"analysis_{uuid4().hex[:12]}"
+        
+        # Build proper response with overall_score
+        response = build_response(
+            analysis_results=analysis_results,
+            analysis_id=analysis_id,
             user_id=user_id,
             speech_title=speech_title,
-            results=analysis_results
+            topic=topic,
+            duration=expected_duration,
+            processing_time=processing_time
+        )
+        
+        # Save results to storage
+        await storage_service.save_analysis(
+            user_id=user_id,
+            speech_title=speech_title,
+            results=response
         )
         
         # Schedule cleanup
         background_tasks.add_task(audio_service.cleanup_file, audio_path)
         
-        logger.info(f"Analysis completed in {processing_time:.2f}s")
+        logger.info(f"Analysis completed in {processing_time:.2f}s with overall_score: {response['overall_score']}")
         
-        return {
-            "analysis_id": analysis_id,
-            "status": "completed",
-            "scores": analysis_results.get("scores", {}),
-            "transcription": analysis_results.get("transcription", ""),
-            "detailed_analysis": analysis_results.get("detailed_analysis", {}),
-            "timestamp": datetime.now().isoformat(),
-            "processing_time": round(processing_time, 2)
-        }
+        return response
         
     except AudioProcessingError as e:
         logger.error(f"Audio processing error: {e}")
@@ -300,11 +423,15 @@ async def quick_analyze(
         audio_path = await audio_service.save_upload(audio_file, "quick_analysis")
         results = await speech_service.analyze(audio_path, analysis_depth="basic")
         
+        # Calculate overall score
+        overall_score = calculate_overall_score(results.get('scores', {}))
+        
         # Cleanup
         background_tasks.add_task(audio_service.cleanup_file, audio_path)
         
         return {
             "status": "completed",
+            "overall_score": overall_score,
             "scores": results.get("scores", {}),
             "summary": results.get("summary", {})
         }
@@ -342,7 +469,7 @@ if __name__ == "__main__":
     import uvicorn
     
     uvicorn.run(
-        "app:app",
+        "main:app",
         host="0.0.0.0",
         port=8000,
         reload=True,

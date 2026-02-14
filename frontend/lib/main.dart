@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:Speak_Sharp/providers/auth_provider.dart';
 import 'package:Speak_Sharp/providers/speech_provider.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
+import 'package:Speak_Sharp/models/speech_model.dart';
 import 'package:Speak_Sharp/screens/splash_screen.dart';
 import 'package:Speak_Sharp/screens/upload_audio_screen.dart';
 import 'package:Speak_Sharp/screens/onboarding/welcome_screen.dart';
@@ -14,7 +15,6 @@ import 'package:Speak_Sharp/screens/onboarding/startup_config_screen.dart';
 import 'package:Speak_Sharp/screens/auth/login_screen.dart';
 import 'package:Speak_Sharp/screens/auth/register_screen.dart';
 import 'package:Speak_Sharp/screens/home/home_screen.dart';
-import 'package:Speak_Sharp/screens/recording/speech_details_dialog.dart';
 import 'package:Speak_Sharp/screens/recording/recording_screen.dart';
 import 'package:Speak_Sharp/screens/recording/playback_screen.dart';
 import 'package:Speak_Sharp/screens/analysis/feedback_screen.dart';
@@ -75,8 +75,7 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>?;
             return MaterialPageRoute(
               builder: (context) => FeedbackScreen(
-                analysisResults: args?['analysisResults'] ?? {},
-                audioPath: args?['audioPath'] ?? '',
+                speech: args?['speech'] ?? SpeechModel.fromJson(args?['analysisResults'] ?? {}),
               ),
             );
           }
