@@ -133,83 +133,31 @@ class SpeechModel {
           _calculateOverallScore(scores),
 
       // Category Scores (0-20 each)
-      grammarScore: getScore(scores['grammar'] ?? scores['vocabulary'] ?? scores['grammar_vocabulary']),
-      voiceScore: getScore(scores['voice'] ?? scores['voice_modulation']),
-      structureScore: getScore(scores['structure'] ?? scores['speech_structure']),
-      effectivenessScore: getScore(scores['effectiveness'] ?? scores['speech_effectiveness']),
-      proficiencyScore: getScore(scores['proficiency']),
+      grammarScore: getScore(scores['grammar_score'] ?? scores['vocabulary'] ?? scores['grammar_vocabulary']),
+      voiceScore: getScore(scores['voice_score'] ?? scores['voice_modulation']),
+      structureScore: getScore(scores['structure_score'] ?? scores['speech_structure']),
+      effectivenessScore: getScore(scores['effectiveness_score'] ?? scores['speech_effectiveness']),
+      proficiencyScore: getScore(scores['proficiency_score']),
 
-      // Fluency Metrics
-      fillerWordCount: getNestedValue(
-        detailedAnalysis,
-        ['fluency', 'filler_words', 'count'],
-        defaultValue: getNestedValue(
-          detailedAnalysis,
-          ['filler_words', 'total_count'],
-          defaultValue: 0,
-        ),
-      ),
-      pauseCount: getNestedValue(
-        detailedAnalysis,
-        ['fluency', 'pauses', 'count'],
-        defaultValue: 0,
-      ),
-      wordsPerMinute: getNestedValue(
-        detailedAnalysis,
-        ['fluency', 'words_per_minute'],
-        defaultValue: 'N/A',
-      )?.toString(),
+      // Fluency Metrics - ✅ READ FROM TOP LEVEL
+      fillerWordCount: json['filler_word_count'] ?? 0,
+      pauseCount: json['pause_count'] ?? 0,
+      wordsPerMinute: json['words_per_minute']?.toString() ?? 'N/A',
 
-      // Voice Metrics
-      pitchVariation: getNestedValue(
-        detailedAnalysis,
-        ['voice', 'pitch_variation'],
-        defaultValue: 'N/A',
-      )?.toString(),
-      volumeControl: getNestedValue(
-        detailedAnalysis,
-        ['voice', 'volume_control'],
-        defaultValue: 'N/A',
-      )?.toString(),
-      emphasisScore: getNestedValue(
-        detailedAnalysis,
-        ['voice', 'emphasis'],
-        defaultValue: 'N/A',
-      )?.toString(),
+      // Voice Metrics - ✅ READ FROM TOP LEVEL
+      pitchVariation: json['pitch_variation']?.toString() ?? 'N/A',
+      volumeControl: json['volume_control']?.toString() ?? 'N/A',
+      emphasisScore: json['emphasis']?.toString() ?? 'N/A',
 
-      // Structure Metrics
-      hasIntro: getNestedValue(
-        detailedAnalysis,
-        ['structure', 'has_introduction'],
-        defaultValue: false,
-      ),
-      hasBody: getNestedValue(
-        detailedAnalysis,
-        ['structure', 'has_body'],
-        defaultValue: false,
-      ),
-      hasConclusion: getNestedValue(
-        detailedAnalysis,
-        ['structure', 'has_conclusion'],
-        defaultValue: false,
-      ),
+      // Structure Metrics - ✅ READ FROM TOP LEVEL
+      hasIntro: json['has_intro'] ?? false,
+      hasBody: json['has_body'] ?? false,
+      hasConclusion: json['has_conclusion'] ?? false,
 
-      // Vocabulary Metrics
-      uniqueWordCount: getNestedValue(
-        detailedAnalysis,
-        ['vocabulary', 'unique_words'],
-        defaultValue: 0,
-      ),
-      totalWords: getNestedValue(
-        detailedAnalysis,
-        ['vocabulary', 'total_words'],
-        defaultValue: 0,
-      ),
-      vocabularyRichness: getNestedValue(
-        detailedAnalysis,
-        ['vocabulary', 'richness'],
-        defaultValue: 'N/A',
-      )?.toString(),
+      // Vocabulary Metrics - ✅ READ FROM TOP LEVEL
+      uniqueWordCount: json['unique_word_count'] ?? 0,
+      totalWords: json['total_words'] ?? 0,
+      vocabularyRichness: json['vocabulary_richness']?.toString() ?? 'N/A',
 
       detailedAnalysis: detailedAnalysis,
       suggestions: (json['suggestions'] as List?)?.cast<String>(),
