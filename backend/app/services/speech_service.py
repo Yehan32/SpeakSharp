@@ -88,7 +88,7 @@ class SpeechAnalysisService:
         """Download required NLTK resources"""
         import nltk
         
-        resources = ['punkt', 'stopwords', 'wordnet', 'averaged_perceptron_tagger_eng']
+        resources = ['punkt', 'punkt_tab', 'stopwords', 'wordnet', 'averaged_perceptron_tagger_eng']
         
         for resource in resources:
             try:
@@ -215,7 +215,7 @@ class SpeechAnalysisService:
                 "scores": overall_scores,  # Contains voice_score, grammar_score, etc (0-20) and overall_score (0-100)
 
                 "overall_score": overall_scores.get('overall_score', 0),
-                
+
                 # Transcription
                 "transcription": transcription_result['text'],
                 
