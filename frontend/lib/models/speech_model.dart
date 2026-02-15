@@ -77,16 +77,14 @@ class SpeechModel {
 
   factory SpeechModel.fromJson(Map<String, dynamic> json) {
     // Helper to safely get scores from nested structures
-    double? getScore(dynamic value) {
+    double getScore(dynamic value) {
       if (value == null) return 0.0;
       if (value is num) return value.toDouble();
       if (value is Map) {
-        // Check for score field in nested object
         if (value.containsKey('score')) {
           final score = value['score'];
           if (score is num) return score.toDouble();
         }
-        // Check for value field
         if (value.containsKey('value')) {
           final val = value['value'];
           if (val is num) return val.toDouble();
@@ -95,23 +93,85 @@ class SpeechModel {
       return 0.0;
     }
 
-    // Helper to get nested value
-    dynamic getNestedValue(Map<String, dynamic> json, List<String> keys,
-        {dynamic defaultValue}) {
-      dynamic current = json;
-      for (var key in keys) {
-        if (current is Map && current.containsKey(key)) {
-          current = current[key];
-        } else {
-          return defaultValue;
-        }
-      }
-      return current ?? defaultValue;
-    }
-
     // Get scores from various possible locations
     final scores = json['scores'] ?? {};
     final detailedAnalysis = json['detailed_analysis'] ?? json['detailedAnalysis'] ?? {};
+
+    // Parse category scores - try both formats (with and without _score suffix)
+    final grammarScore = getScore(
+        scores['grammar'] ??
+            scores['grammar_score'] ??
+            scores['vocabulary'] ??
+            scores['grammar_vocabulary']
+    );
+
+    final voiceScore = getScore(
+        scores['voice'] ??
+            scores['voice_score'] ??
+            scores['voice_modulation']
+    );
+
+    final structureScore = getScore(
+        scores['structure'] ??
+            scores['structure_score'] ??
+            scores['speech_structure']
+    );
+
+    final effectivenessScore = getScore(
+        scores['effectiveness'] ??
+            scores['effectiveness_score'] ??
+            scores['speech_effectiveness']
+    );
+
+    final proficiencyScore = getScore(
+        scores['proficiency'] ??
+            scores['proficiency_score']
+    );
+
+    // Calculate overall if not provided (null-safe)
+    double calculatedOverall = 0.0;
+    int scoreCount = 0;
+    double scoreTotal = 0.0;
+
+    // Add non-zero scores (null-safe comparison)
+    if ((grammarScore) > 0.0) {
+      scoreTotal += grammarScore;
+      scoreCount++;
+    }
+    if ((voiceScore) > 0.0) {
+      scoreTotal += voiceScore;
+      scoreCount++;
+    }
+    if ((structureScore) > 0.0) {
+      scoreTotal += structureScore;
+      scoreCount++;
+    }
+    if ((effectivenessScore) > 0.0) {
+      scoreTotal += effectivenessScore;
+      scoreCount++;
+    }
+    if ((proficiencyScore) > 0.0) {
+      scoreTotal += proficiencyScore;
+      scoreCount++;
+    }
+
+    if (scoreCount > 0) {
+      calculatedOverall = (scoreTotal / scoreCount) * 5.0; // Convert 0-20 to 0-100
+    }
+
+    // Get overall score from multiple possible locations
+    final overallFromJson = json['overall_score'];
+    final overallFromJsonCamel = json['overallScore'];
+    final overallFromScores = scores['overall_score'];
+
+    double finalOverallScore = calculatedOverall;
+    if (overallFromJson != null && overallFromJson is num) {
+      finalOverallScore = overallFromJson.toDouble();
+    } else if (overallFromJsonCamel != null && overallFromJsonCamel is num) {
+      finalOverallScore = overallFromJsonCamel.toDouble();
+    } else if (overallFromScores != null && overallFromScores is num) {
+      finalOverallScore = overallFromScores.toDouble();
+    }
 
     return SpeechModel(
       id: json['id'] ?? json['analysis_id'],
@@ -125,36 +185,32 @@ class SpeechModel {
           ? DateTime.parse(json['timestamp'])
           : DateTime.now()),
       audioUrl: json['audio_url'] ?? json['audioUrl'],
-      transcription: json['transcription'] ?? detailedAnalysis['transcription'],
+      transcription: json['transcription'],
 
-      // Overall Score - calculate from category scores if not provided
-      overallScore: json['overall_score']?.toDouble() ??
-          json['overallScore']?.toDouble() ??
-          _calculateOverallScore(scores),
+      // Scores
+      overallScore: finalOverallScore,
+      grammarScore: grammarScore,
+      voiceScore: voiceScore,
+      structureScore: structureScore,
+      effectivenessScore: effectivenessScore,
+      proficiencyScore: proficiencyScore,
 
-      // Category Scores (0-20 each)
-      grammarScore: getScore(scores['grammar_score'] ?? scores['vocabulary'] ?? scores['grammar_vocabulary']),
-      voiceScore: getScore(scores['voice_score'] ?? scores['voice_modulation']),
-      structureScore: getScore(scores['structure_score'] ?? scores['speech_structure']),
-      effectivenessScore: getScore(scores['effectiveness_score'] ?? scores['speech_effectiveness']),
-      proficiencyScore: getScore(scores['proficiency_score']),
-
-      // Fluency Metrics - ✅ READ FROM TOP LEVEL
+      // Fluency Metrics - try top level first, then nested
       fillerWordCount: json['filler_word_count'] ?? 0,
       pauseCount: json['pause_count'] ?? 0,
       wordsPerMinute: json['words_per_minute']?.toString() ?? 'N/A',
 
-      // Voice Metrics - ✅ READ FROM TOP LEVEL
+      // Voice Metrics - try top level first, then nested
       pitchVariation: json['pitch_variation']?.toString() ?? 'N/A',
       volumeControl: json['volume_control']?.toString() ?? 'N/A',
       emphasisScore: json['emphasis']?.toString() ?? 'N/A',
 
-      // Structure Metrics - ✅ READ FROM TOP LEVEL
+      // Structure Metrics - try top level first, then nested
       hasIntro: json['has_intro'] ?? false,
       hasBody: json['has_body'] ?? false,
       hasConclusion: json['has_conclusion'] ?? false,
 
-      // Vocabulary Metrics - ✅ READ FROM TOP LEVEL
+      // Vocabulary Metrics - try top level first, then nested
       uniqueWordCount: json['unique_word_count'] ?? 0,
       totalWords: json['total_words'] ?? 0,
       vocabularyRichness: json['vocabulary_richness']?.toString() ?? 'N/A',
@@ -187,62 +243,5 @@ class SpeechModel {
       'suggestions': suggestions,
       'status': status,
     };
-  }
-
-  // Calculate overall score from category scores
-  static double _calculateOverallScore(Map<String, dynamic> scores) {
-    if (scores.isEmpty) return 0.0;
-
-    double total = 0.0;
-    int count = 0;
-
-    // Extract scores
-    final grammarScore = _extractScore(scores['grammar'] ?? scores['vocabulary']);
-    final voiceScore = _extractScore(scores['voice'] ?? scores['voice_modulation']);
-    final structureScore = _extractScore(scores['structure'] ?? scores['speech_structure']);
-    final effectivenessScore = _extractScore(scores['effectiveness'] ?? scores['speech_effectiveness']);
-    final proficiencyScore = _extractScore(scores['proficiency']);
-
-    if (grammarScore > 0) {
-      total += grammarScore;
-      count++;
-    }
-    if (voiceScore > 0) {
-      total += voiceScore;
-      count++;
-    }
-    if (structureScore > 0) {
-      total += structureScore;
-      count++;
-    }
-    if (effectivenessScore > 0) {
-      total += effectivenessScore;
-      count++;
-    }
-    if (proficiencyScore > 0) {
-      total += proficiencyScore;
-      count++;
-    }
-
-    if (count == 0) return 0.0;
-
-    // Convert to 0-100 scale (each score is 0-20, so multiply by 5)
-    return (total / count) * 5;
-  }
-
-  static double _extractScore(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is num) return value.toDouble();
-    if (value is Map) {
-      if (value.containsKey('score')) {
-        final score = value['score'];
-        if (score is num) return score.toDouble();
-      }
-      if (value.containsKey('value')) {
-        final val = value['value'];
-        if (val is num) return val.toDouble();
-      }
-    }
-    return 0.0;
   }
 }
