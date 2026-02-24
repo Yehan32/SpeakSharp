@@ -43,9 +43,9 @@ class WelcomeScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 20),
-                          
+
                           // Title
                           Text(
                             'Welcome to\nSpeak Sharp',
@@ -55,9 +55,9 @@ class WelcomeScreen extends StatelessWidget {
                               color: Colors.white,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 15),
-                          
+
                           // Description
                           Text(
                             'Your personal AI-powered speech coach that helps you become a confident speaker',
@@ -71,7 +71,7 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Curved bottom
                 Positioned(
                   bottom: 0,
@@ -90,13 +90,23 @@ class WelcomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Action Section
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(30),
             child: Column(
               children: [
+                // ✅ ADDED: Tutorial hint text
+                const Text(
+                  'Quick tutorial ahead',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 // Page Indicator
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -129,30 +139,46 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 25),
-                
-                // Get Started Button
+
+                // Get Started Button (Primary action)
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pushReplacementNamed('/onboarding/features');
                     },
-                    child: const Text('Get Started'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Get Started',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-                
-                const SizedBox(height: 15),
-                
-                // Skip Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).pushReplacementNamed('/auth/login');
-                    },
-                    child: const Text('Skip Tutorial'),
+
+                const SizedBox(height: 16),
+
+                // ✅ FIXED: Skip button as text button (less prominent)
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pushReplacementNamed('/auth/login');
+                  },
+                  child: const Text(
+                    'Skip Tutorial',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ],

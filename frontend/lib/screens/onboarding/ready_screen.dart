@@ -51,27 +51,29 @@ class ReadyScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(30),
             child: Column(
               children: [
+                // FIXED: Navigate to home instead of login
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pushReplacementNamed('/auth/login');
+                      Navigator.of(context).pushReplacementNamed('/home');  // Changed from /auth/login
                     },
                     child: const Text('Start Recording'),
                   ),
                 ),
                 const SizedBox(height: 15),
+                // ✅ FIXED: Navigate to home instead of login
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: () {
-                      Navigator.of(context).pushReplacementNamed('/auth/login');
+                      Navigator.of(context).pushReplacementNamed('/home');  //  Changed from /auth/login
                     },
                     child: const Text('Explore Features'),
                   ),
