@@ -100,6 +100,7 @@ class GrammarAnalyzer:
                 'combined_score': combined_score,
                 'lexical_diversity': round(lexical_diversity, 2),
                 'unique_words': len(set(words)) if words else 0,
+                'total_words': total_words, 
                 'repeated_words': repeated_words[:5],
                 'advanced_vocab_count': advanced_vocab_count,
                 'grammar_issues': grammar_issues,
