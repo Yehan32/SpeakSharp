@@ -90,12 +90,16 @@ def build_response(
     """
     scores = analysis_results.get('scores', {})
 
-    # Get overall_score - speech_service puts it at root level AND in scores dict
-    overall_score = (
-        analysis_results.get('overall_score') or
-        scores.get('overall_score') or
-        calculate_overall_score(scores)
-    )
+    # Calculate overall from the 5 displayed category scores for UI consistency.
+    # speech_service now also calculates this way, but we recalculate here
+    # as a safety net to ensure overall always matches what the user sees.
+    cat_voice = float(scores.get('voice_score', 0) or 0)
+    cat_grammar = float(scores.get('grammar_score', 0) or 0)
+    cat_structure = float(scores.get('structure_score', 0) or 0)
+    cat_effectiveness = float(scores.get('effectiveness_score', 0) or 0)
+    cat_proficiency = float(scores.get('proficiency_score', 0) or 0)
+    five_total = cat_voice + cat_grammar + cat_structure + cat_effectiveness + cat_proficiency
+    overall_score = round((five_total / 5) / 20 * 100, 1)
 
     response = {
         'analysis_id': analysis_id,

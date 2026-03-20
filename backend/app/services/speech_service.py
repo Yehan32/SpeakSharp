@@ -230,7 +230,7 @@ class SpeechAnalysisService:
                     proficiency_analysis.get('pause_analysis', {}).get('Pauses exceeding 3 seconds', 0),
                     proficiency_analysis.get('pause_analysis', {}).get('Pauses exceeding 5 seconds', 0)
                 ]),
-                "words_per_minute": f"{int((len(transcription_result['text'].split()) / transcription_result.get('duration', 1)) * 60)}",
+                "words_per_minute": self._calculate_wpm(transcription_result),
                 
                 # Voice Tab
                 "pitch_variation": f"{voice_analysis.get('pitch_analysis', {}).get('pitch_variation', 0):.1f} Hz",
@@ -386,7 +386,19 @@ class SpeechAnalysisService:
         voice_score = raw_scores["voice_modulation"]  # Already 0-20
         grammar_score = ((raw_scores["grammar"] + raw_scores["vocabulary"]) / 100) * 20  # Combine and scale to 0-20
         structure_score = (raw_scores["structure"] / 50) * 20  # Scale to 0-20
-        effectiveness_score = structure_score  # Use structure as proxy for now
+
+        # Effectiveness: separate calculation from structure_analysis data
+        # Uses purpose clarity, sentence length, and conclusion presence
+        purpose_ok = structure.get('purpose_clarity', False)
+        conclusion_ok = structure.get('has_conclusion', False)
+        avg_len = structure.get('avg_sentence_length', 0)
+        sentence_length_ok = 8 <= avg_len <= 30 if avg_len > 0 else False
+        effectiveness_points = (
+            (40 if purpose_ok else 0) +
+            (30 if conclusion_ok else 0) +
+            (30 if sentence_length_ok else 10)  # min 10 pts for any speech with content
+        )
+        effectiveness_score = (effectiveness_points / 100) * 20
         proficiency_score = raw_scores["proficiency"]  # Already 0-20
         
         # ===== STEP 3: Normalize to 0-100 for overall calculation =====
@@ -404,27 +416,10 @@ class SpeechAnalysisService:
         if raw_scores["topic_relevance"] is not None:
             normalized_scores["topic_relevance"] = raw_scores["topic_relevance"]  # Already 0-100
         
-        # ===== STEP 4: Calculate weighted OVERALL (0-100) =====
-        weights = {
-            "filler_words": 0.10,
-            "proficiency": 0.10,
-            "voice_modulation": 0.15,
-            "grammar": 0.15,
-            "vocabulary": 0.10,
-            "structure": 0.15,
-            "pronunciation": 0.15,
-            "emphasis": 0.10
-        }
-        
-        if raw_scores["topic_relevance"] is not None:
-            weights = {k: v * 0.9 for k, v in weights.items()}
-            weights["topic_relevance"] = 0.10
-        
-        # Calculate weighted average (0-100 scale)
-        overall_score = sum(
-            normalized_scores.get(key, 50) * weight
-            for key, weight in weights.items()
-        )
+        # ===== STEP 4: Calculate OVERALL from the 5 DISPLAYED category scores =====
+        # This ensures overall matches what the user sees on screen
+        five_scores = [voice_score, grammar_score, structure_score, effectiveness_score, proficiency_score]
+        overall_score = round((sum(five_scores) / 5) / 20 * 100, 1)
         
         # ===== STEP 5: Return scores in CORRECT format =====
         return {
@@ -506,6 +501,27 @@ class SpeechAnalysisService:
         
         return suggestions
     
+    def _calculate_wpm(self, transcription_result: dict) -> str:
+        """Calculate words per minute safely, returns 'N/A' if duration is unreliable"""
+        try:
+            duration = transcription_result.get('duration', 0) or 0
+            text = transcription_result.get('text', '')
+            word_count = len(text.split()) if text else 0
+
+            # Need at least 5 seconds of audio for a meaningful WPM
+            if duration < 5 or word_count == 0:
+                return 'N/A'
+
+            wpm = int((word_count / duration) * 60)
+
+            # Sanity check: normal speech is 80-350 WPM
+            if wpm < 50 or wpm > 400:
+                return 'N/A'
+
+            return str(wpm)
+        except Exception:
+            return 'N/A'
+
     async def cleanup(self):
         """Cleanup resources"""
         logger.info("Cleaning up Speech Analysis Service...")
