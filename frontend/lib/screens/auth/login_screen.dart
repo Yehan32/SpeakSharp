@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
       text: _emailController.text.trim(),
     );
 
-    await showDialog(
+    final emailToReset = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -177,8 +177,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
                 return;
               }
-              Navigator.pop(ctx);
-              await _sendPasswordReset(email);
+              // Pass email back via pop — send AFTER dialog fully closes
+              Navigator.pop(ctx, email);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.accentColor,
@@ -193,7 +193,10 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    resetEmailController.dispose();
+    // Dialog is now fully closed — safe to send and show snackbar
+    if (emailToReset != null && emailToReset.isNotEmpty) {
+      await _sendPasswordReset(emailToReset);
+    }
   }
 
   Future<void> _sendPasswordReset(String email) async {
@@ -390,7 +393,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: TextButton(
                             onPressed: _isLoading ? null : _handleForgotPassword,
                             child: Text(
-                              'Forgot password?',
+                              'Forgot?',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppTheme.accentColor,
                                 fontWeight: FontWeight.w600,
