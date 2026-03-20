@@ -173,27 +173,27 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AppTheme.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text(
             'Analysis Failed',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
           ),
           content: Text(
             'Failed to analyze speech: $e\n\nPlease check your internet connection and try again.',
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: AppTheme.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _uploadAndAnalyze(); // Retry
+                _uploadAndAnalyze();
               },
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor,
+                foregroundColor: AppTheme.accentColor,
               ),
               child: const Text('Retry'),
             ),
@@ -208,14 +208,14 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
     final shouldReRecord = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardColor,
-        title: const Text(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
           'Re-record Speech?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
         ),
-        content: const Text(
+        content: Text(
           'Your current recording will be lost.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
@@ -256,15 +256,15 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.cardColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Review Recording',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
         ),
       ),
       body: SafeArea(
@@ -284,7 +284,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
           Text(
             widget.topic,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppTheme.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -300,14 +300,16 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
               vertical: 8,
             ),
             decoration: BoxDecoration(
-              color: AppTheme.cardColor,
+              color: AppTheme.accentColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.accentColor.withOpacity(0.3)),
             ),
             child: Text(
               'Recording: ${_formatDuration(Duration(seconds: widget.recordingDuration))}',
               style: const TextStyle(
-                color: Colors.white70,
+                color: AppTheme.accentColor,
                 fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -330,8 +332,8 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                 onChanged: (value) {
                   _seekTo(Duration(seconds: value.toInt()));
                 },
-                activeColor: AppTheme.primaryColor,
-                inactiveColor: AppTheme.primaryColor.withOpacity(0.3),
+                activeColor: AppTheme.accentColor,
+                inactiveColor: AppTheme.accentColor.withOpacity(0.2),
               ),
 
               // Time labels
@@ -342,16 +344,18 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                   children: [
                     Text(
                       _formatDuration(_position),
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
                         fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
                       _formatDuration(_duration),
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
                         fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -370,10 +374,10 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primaryColor,
+                gradient: AppTheme.primaryGradient,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.4),
+                    color: AppTheme.accentColor.withOpacity(0.4),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -399,8 +403,8 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Re-record'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                    side: const BorderSide(color: Colors.white30),
+                    foregroundColor: AppTheme.textSecondary,
+                    side: BorderSide(color: AppTheme.textTertiary.withOpacity(0.5)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -419,12 +423,13 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                   icon: const Icon(Icons.analytics),
                   label: const Text('Analyze Speech'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: AppTheme.accentColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 0,
                   ),
                 ),
               ),
@@ -456,12 +461,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                     height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryColor,
-                          AppTheme.accentColor,
-                        ],
-                      ),
+                      gradient: AppTheme.primaryGradient,
                     ),
                     child: const Icon(
                       Icons.cloud_upload,
@@ -475,10 +475,10 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
 
             const SizedBox(height: 40),
 
-            const Text(
+            Text(
               'Analyzing Your Speech',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -488,8 +488,8 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
 
             Text(
               _getUploadMessage(),
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -506,9 +506,9 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                 child: LinearProgressIndicator(
                   value: _uploadProgress,
                   minHeight: 8,
-                  backgroundColor: AppTheme.cardColor,
+                  backgroundColor: AppTheme.accentColor.withOpacity(0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    AppTheme.primaryColor,
+                    AppTheme.accentColor,
                   ),
                 ),
               ),
@@ -519,7 +519,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
             Text(
               '${(_uploadProgress * 100).toInt()}%',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.accentColor,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -560,8 +560,8 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
               color: isActive
-                  ? AppTheme.primaryColor
-                  : AppTheme.primaryColor.withOpacity(0.3),
+                  ? AppTheme.accentColor
+                  : AppTheme.accentColor.withOpacity(0.25),
               borderRadius: BorderRadius.circular(2),
             ),
           );
