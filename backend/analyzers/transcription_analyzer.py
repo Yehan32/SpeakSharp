@@ -28,7 +28,15 @@ class TranscriptionAnalyzer:
                 model="whisper-1",
                 file=audio_file,
                 response_format="verbose_json",
-                timestamp_granularities=["word"]
+                timestamp_granularities=["word"],
+                # CRITICAL: Without this prompt, Whisper silently removes filler words
+                # like um, uh, like, etc. from the transcript
+                prompt=(
+                    "Transcribe exactly as spoken. Keep every filler word: "
+                    "um, uh, ah, er, like, you know, basically, literally, actually, "
+                    "hmm, huh, yeah, right, okay, well, kinda, gonna, wanna. "
+                    "Do not clean up or remove any words. Verbatim transcription only."
+                )
             )
         
         # Convert OpenAI response to our format
@@ -66,6 +74,7 @@ class TranscriptionAnalyzer:
             'text': transcription_with_pauses,
             'segments': result['segments'],
             'total_pause_duration': total_pause_duration,
+            'duration': response.duration if hasattr(response, 'duration') else 0,
             'raw_result': result
         }
     

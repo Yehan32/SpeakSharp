@@ -39,29 +39,50 @@ class FillerWordAnalyzer:
         return cleaned
     
     def _analyze_filler_words(self, result):
-        """Analyze filler words with stricter penalties"""
+        """Analyze filler words - uses word timestamps if available, text fallback otherwise"""
         total_filler_words = 0
         filler_words_per_minute = {}
         total_words = 0
-        
+
         # Get segments from result
         segments = result.get('segments', result.get('raw_result', {}).get('segments', []))
-        
-        # Process each word with its timestamp
-        for segment in segments:
-            for word_info in segment.get('words', []):
-                total_words += 1
-                word = self._clean_word(word_info['word'])
-                
-                if word in self.FILLER_WORDS:
-                    timestamp = word_info['start']
-                    minute = int(timestamp // 60)
-                    total_filler_words += 1
-                    
-                    # Update filler words count for this minute
-                    if minute not in filler_words_per_minute:
-                        filler_words_per_minute[minute] = 0
-                    filler_words_per_minute[minute] += 1
+
+        # Check if we have word-level timestamps
+        has_word_timestamps = any(
+            len(segment.get('words', [])) > 0 for segment in segments
+        )
+
+        if has_word_timestamps:
+            # === METHOD 1: Use word timestamps (accurate, includes per-minute breakdown) ===
+            for segment in segments:
+                for word_info in segment.get('words', []):
+                    total_words += 1
+                    word = self._clean_word(word_info['word'])
+
+                    if word in self.FILLER_WORDS:
+                        timestamp = word_info.get('start', 0)
+                        minute = int(timestamp // 60)
+                        total_filler_words += 1
+
+                        if minute not in filler_words_per_minute:
+                            filler_words_per_minute[minute] = 0
+                        filler_words_per_minute[minute] += 1
+        else:
+            # === METHOD 2: Text-based fallback (no timestamps available) ===
+            text = result.get('text', '')
+            if text:
+                # Remove pause markers before counting
+                import re
+                clean_text = re.sub(r'\[\d+\.?\d* second pause\]', '', text)
+                words = clean_text.lower().split()
+                total_words = len(words)
+
+                for word in words:
+                    cleaned = self._clean_word(word)
+                    if cleaned in self.FILLER_WORDS:
+                        total_filler_words += 1
+                        # No timestamps, put all in minute 1
+                        filler_words_per_minute[0] = filler_words_per_minute.get(0, 0) + 1
 
         # Calculate filler word density
         filler_density = total_filler_words / total_words if total_words > 0 else 0
