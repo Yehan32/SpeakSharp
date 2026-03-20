@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'package:Speak_Sharp/services/api_service.dart';
+import 'package:Speak_Sharp/widgets/main_bottom_nav.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -48,6 +49,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      bottomNavigationBar: const MainBottomNav(currentIndex: 2),
       body: SingleChildScrollView(
         child: Column(
           children: [

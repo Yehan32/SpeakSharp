@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'package:Speak_Sharp/services/api_service.dart';
+import 'package:Speak_Sharp/widgets/main_bottom_nav.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -234,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: const MainBottomNav(currentIndex: 0),
     );
   }
 

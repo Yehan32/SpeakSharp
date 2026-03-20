@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'package:Speak_Sharp/services/api_service.dart';
+import 'package:Speak_Sharp/widgets/main_bottom_nav.dart';
+import 'package:Speak_Sharp/widgets/main_bottom_nav.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -283,6 +285,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: const MainBottomNav(currentIndex: 1),
       body: Column(
         children: [
           // Search Bar
