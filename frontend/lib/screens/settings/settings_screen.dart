@@ -661,8 +661,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text('Update Password',
             style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold)),
         content: Text(
-            'A password reset link will be sent to:
-            \${user.email}',
+            'A password reset link will be sent to: {user.email}',
         style: TextStyle(color: AppTheme.textSecondary),
       ),
       actions: [
