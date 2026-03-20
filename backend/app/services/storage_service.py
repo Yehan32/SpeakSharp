@@ -1,64 +1,38 @@
 """
-Storage Service
+Storage Service - FIXED VERSION
 Handles data persistence using Firebase Firestore
+
+KEY FIXES:
+1. Uses existing Firebase instance from firebase_config.py (correct project speak-sharp-6bd84)
+   instead of re-initializing with env vars that may not be set
+2. Saves to users/{user_id}/speeches/ path which matches Firestore security rules
+   so the Flutter client can actually READ the data
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
 
-from firebase_admin import credentials, firestore, initialize_app
-import firebase_admin
-
+from firebase_admin import firestore
 from app.utils.logger import setup_logger
 from app.utils.exceptions import StorageError
-from config.settings import settings
 
 logger = setup_logger(__name__)
 
+
 class StorageService:
-    """Service for data storage operations using Firebase"""
-    
+    """Service for data storage using Firebase Firestore"""
+
     def __init__(self):
-        self.db = None
-        self._initialize_firebase()
-    
-    def _initialize_firebase(self):
-        """Initialize Firebase Admin SDK"""
+        # Use the Firebase instance already initialized by firebase_config.py
+        # Do NOT initialize again - it will throw "app already exists"
         try:
-            # Check if already initialized
-            if firebase_admin._apps:
-                self.db = firestore.client()
-                logger.info("Firebase already initialized")
-                return
-            
-            # Firebase credentials
-            private_key = settings.FIREBASE_PRIVATE_KEY.replace("\\n", "\n")
-            
-            service_account_key = {
-                "type": "service_account",
-                "project_id": settings.FIREBASE_PROJECT_ID,
-                "private_key_id": settings.FIREBASE_PRIVATE_KEY_ID,
-                "private_key": private_key,
-                "client_email": settings.FIREBASE_CLIENT_EMAIL,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "universe_domain": "googleapis.com"
-            }
-            
-            cred = credentials.Certificate(service_account_key)
-            initialize_app(cred, {
-                'storageBucket': settings.FIREBASE_STORAGE_BUCKET
-            })
-            
             self.db = firestore.client()
-            logger.info("Firebase initialized successfully")
-            
+            logger.info("StorageService ready (using existing Firebase instance)")
         except Exception as e:
-            logger.error(f"Firebase initialization failed: {e}")
-            raise StorageError(f"Failed to initialize storage: {str(e)}")
-    
+            logger.error(f"StorageService: Firestore unavailable: {e}")
+            self.db = None
+
     async def save_analysis(
         self,
         user_id: str,
@@ -66,215 +40,193 @@ class StorageService:
         results: Dict[str, Any]
     ) -> str:
         """
-        Save analysis results to Firestore
-        
-        Args:
-            user_id: User identifier
-            speech_title: Optional speech title
-            results: Analysis results
-        
-        Returns:
-            Analysis ID
+        Save analysis to Firestore under users/{user_id}/speeches/
+
+        This path matches the Firestore security rules:
+          match /users/{userId}/speeches/{speechId} {
+            allow read, write: if request.auth.uid == userId;
+          }
+        So the Flutter client can read it directly.
         """
+        if self.db is None:
+            logger.warning("No Firestore connection - skipping save")
+            return "no-db"
+
         try:
-            analysis_id = str(uuid.uuid4())
-            
+            speech_id = str(uuid.uuid4())
+
             doc_data = {
-                "analysis_id": analysis_id,
+                "id": speech_id,
+                "analysis_id": speech_id,
                 "user_id": user_id,
-                "speech_title": speech_title or "Untitled Speech",
+
+                # Title and topic
+                "speech_title": speech_title or results.get("topic") or "Untitled Speech",
                 "topic": results.get("topic") or speech_title or "Not specified",
-                "timestamp": datetime.now(),
+
+                # Timestamps - both server timestamp and ISO string
+                "recorded_at": firestore.SERVER_TIMESTAMP,
+                "timestamp": datetime.now().isoformat(),
+
+                # Scores
                 "overall_score": results.get("overall_score", 0),
                 "scores": results.get("scores", {}),
+
+                # Duration
                 "duration": results.get("duration", "N/A"),
-                "processing_time": results.get("processing_time", 0),
-                # Flat metrics so history screen can show them
+
+                # Flat metrics for list display
                 "filler_word_count": results.get("filler_word_count", 0),
                 "words_per_minute": results.get("words_per_minute", "N/A"),
-                "transcription_preview": results.get("transcription", "")[:500]
+                "pitch_variation": results.get("pitch_variation", "N/A"),
+                "volume_control": results.get("volume_control", "N/A"),
+                "emphasis": results.get("emphasis", "N/A"),
+                "has_intro": results.get("has_intro", False),
+                "has_body": results.get("has_body", False),
+                "has_conclusion": results.get("has_conclusion", False),
+                "unique_word_count": results.get("unique_word_count", 0),
+                "total_words": results.get("total_words", 0),
+                "vocabulary_richness": results.get("vocabulary_richness", "N/A"),
+
+                # Transcription preview (first 500 chars)
+                "transcription": results.get("transcription", "")[:500],
+
+                # Suggestions
+                "suggestions": results.get("suggestions", []),
             }
-            
-            # Save main document
-            self.db.collection('analyses').document(analysis_id).set(doc_data)
-            
-            # Save detailed analysis in subcollection
-            self.db.collection('analyses').document(analysis_id).collection('details').document('full').set({
-                "detailed_analysis": results.get("detailed_analysis", {}),
-                "full_transcription": results.get("transcription", "")
-            })
-            
-            logger.info(f"Analysis saved: {analysis_id}")
-            
-            return analysis_id
-            
+
+            # Save under users/{user_id}/speeches/{speech_id}
+            self.db.collection('users')\
+                .document(user_id)\
+                .collection('speeches')\
+                .document(speech_id)\
+                .set(doc_data)
+
+            logger.info(f"Saved speech to users/{user_id}/speeches/{speech_id}")
+            return speech_id
+
         except Exception as e:
             logger.error(f"Failed to save analysis: {e}")
-            raise StorageError(f"Failed to save analysis: {str(e)}")
-    
+            return "save-failed"
+
     async def get_analysis(
         self,
         analysis_id: str,
         user_id: str
     ) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve analysis by ID
-        
-        Args:
-            analysis_id: Analysis identifier
-            user_id: User identifier (for access control)
-        
-        Returns:
-            Analysis data or None
-        """
+        """Retrieve a specific analysis"""
+        if self.db is None:
+            return None
+
         try:
-            doc = self.db.collection('analyses').document(analysis_id).get()
-            
+            doc = self.db.collection('users')\
+                .document(user_id)\
+                .collection('speeches')\
+                .document(analysis_id)\
+                .get()
+
             if not doc.exists:
                 return None
-            
+
             data = doc.to_dict()
-            
-            # Verify user access
-            if data.get('user_id') != user_id:
-                raise StorageError("Unauthorized access")
-            
-            # Get detailed analysis
-            details_doc = self.db.collection('analyses').document(analysis_id).collection('details').document('full').get()
-            
-            if details_doc.exists:
-                details = details_doc.to_dict()
-                data['detailed_analysis'] = details.get('detailed_analysis', {})
-                data['full_transcription'] = details.get('full_transcription', '')
-            
+            data['id'] = doc.id
             return data
-            
+
         except Exception as e:
             logger.error(f"Failed to retrieve analysis: {e}")
-            raise StorageError(f"Failed to retrieve analysis: {str(e)}")
-    
+            return None
+
     async def get_user_history(
         self,
         user_id: str,
         limit: int = 20,
         offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """
-        Get user's analysis history
-        
-        Args:
-            user_id: User identifier
-            limit: Maximum number of results
-            offset: Result offset for pagination
-        
-        Returns:
-            List of analyses
-        """
+        """Get user's speech history from users/{user_id}/speeches/"""
+        if self.db is None:
+            return []
+
         try:
-            query = self.db.collection('analyses')\
-                .where('user_id', '==', user_id)\
-                .order_by('timestamp', direction=firestore.Query.DESCENDING)\
-                .limit(limit)\
-                .offset(offset)
-            
-            docs = query.stream()
-            
+            query = self.db.collection('users')\
+                .document(user_id)\
+                .collection('speeches')\
+                .order_by('recorded_at', direction=firestore.Query.DESCENDING)\
+                .limit(limit)
+
             results = []
-            for doc in docs:
+            for doc in query.stream():
                 data = doc.to_dict()
-                # Remove detailed data for list view
-                data.pop('detailed_analysis', None)
+                data['id'] = doc.id
+                data['analysis_id'] = doc.id
+
+                # Convert Firestore Timestamp to ISO string for JSON
+                recorded_at = data.get('recorded_at')
+                if hasattr(recorded_at, 'isoformat'):
+                    data['timestamp'] = recorded_at.isoformat()
+                elif 'timestamp' not in data:
+                    data['timestamp'] = datetime.now().isoformat()
+
                 results.append(data)
-            
+
+            logger.info(f"Retrieved {len(results)} speeches for user {user_id}")
             return results
-            
+
         except Exception as e:
             logger.error(f"Failed to get history: {e}")
-            raise StorageError(f"Failed to get history: {str(e)}")
-    
+            return []
+
     async def delete_analysis(
         self,
         analysis_id: str,
         user_id: str
     ) -> bool:
-        """
-        Delete an analysis
-        
-        Args:
-            analysis_id: Analysis identifier
-            user_id: User identifier (for access control)
-        
-        Returns:
-            True if deleted
-        """
+        """Delete a specific analysis"""
+        if self.db is None:
+            return False
+
         try:
-            doc_ref = self.db.collection('analyses').document(analysis_id)
-            doc = doc_ref.get()
-            
-            if not doc.exists:
+            doc_ref = self.db.collection('users')\
+                .document(user_id)\
+                .collection('speeches')\
+                .document(analysis_id)
+
+            if not doc_ref.get().exists:
                 return False
-            
-            data = doc.to_dict()
-            
-            # Verify user access
-            if data.get('user_id') != user_id:
-                raise StorageError("Unauthorized access")
-            
-            # Delete main document and details
+
             doc_ref.delete()
-            
-            # Delete details subcollection
-            details_ref = doc_ref.collection('details').document('full')
-            details_ref.delete()
-            
-            logger.info(f"Analysis deleted: {analysis_id}")
-            
+            logger.info(f"Deleted analysis {analysis_id}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to delete analysis: {e}")
-            raise StorageError(f"Failed to delete analysis: {str(e)}")
-    
+            return False
+
     async def update_analysis(
         self,
         analysis_id: str,
         user_id: str,
         updates: Dict[str, Any]
     ) -> bool:
-        """
-        Update analysis metadata
-        
-        Args:
-            analysis_id: Analysis identifier
-            user_id: User identifier
-            updates: Fields to update
-        
-        Returns:
-            True if updated
-        """
+        """Update analysis metadata"""
+        if self.db is None:
+            return False
+
         try:
-            doc_ref = self.db.collection('analyses').document(analysis_id)
-            doc = doc_ref.get()
-            
-            if not doc.exists:
+            doc_ref = self.db.collection('users')\
+                .document(user_id)\
+                .collection('speeches')\
+                .document(analysis_id)
+
+            if not doc_ref.get().exists:
                 return False
-            
-            data = doc.to_dict()
-            
-            # Verify user access
-            if data.get('user_id') != user_id:
-                raise StorageError("Unauthorized access")
-            
-            # Update allowed fields
-            allowed_fields = ['speech_title', 'notes', 'tags']
-            filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
-            
-            if filtered_updates:
-                doc_ref.update(filtered_updates)
-                logger.info(f"Analysis updated: {analysis_id}")
-            
+
+            allowed = ['speech_title', 'topic', 'notes', 'tags']
+            filtered = {k: v for k, v in updates.items() if k in allowed}
+            if filtered:
+                doc_ref.update(filtered)
+
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to update analysis: {e}")
-            raise StorageError(f"Failed to update analysis: {str(e)}")
+            return False

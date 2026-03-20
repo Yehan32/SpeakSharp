@@ -151,28 +151,33 @@ class ApiService {
       debugPrint('Backend history failed, trying Firestore: $e');
     }
 
-    // Fallback: read directly from Firestore
+    // Fallback: read directly from Firestore users/{userId}/speeches/
+    // This matches the path the backend now saves to AND Firestore security rules
     try {
-      final firestore = FirebaseFirestore.instance;
-      final snapshot = await firestore
-          .collection('analyses')
-          .where('user_id', isEqualTo: userId)
-          .orderBy('timestamp', descending: true)
+      final firestoreDb = FirebaseFirestore.instance;
+      final snapshot = await firestoreDb
+          .collection('users')
+          .doc(userId)
+          .collection('speeches')
+          .orderBy('recorded_at', descending: true)
           .limit(limit)
           .get();
 
       return snapshot.docs.map((doc) {
         final data = Map<String, dynamic>.from(doc.data());
         data['id'] = doc.id;
-        // Convert Timestamp to ISO string for consistency
-        if (data['timestamp'] is Timestamp) {
-          data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
+        data['analysis_id'] = doc.id;
+        // Convert Firestore Timestamp to ISO string
+        final recordedAt = data['recorded_at'];
+        if (recordedAt is Timestamp) {
+          data['timestamp'] = recordedAt.toDate().toIso8601String();
+          data['recorded_at'] = recordedAt.toDate().toIso8601String();
         }
         return data;
       }).toList();
     } catch (e) {
       debugPrint('Firestore history also failed: $e');
-      return []; // Return empty instead of crashing
+      return [];
     }
   }
 
