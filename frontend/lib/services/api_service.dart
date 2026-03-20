@@ -131,28 +131,13 @@ class ApiService {
     }
   }
 
-  /// Get user's speech history - tries backend first, falls back to Firestore directly
+  /// Get user's speech history - reads Firestore first (most reliable)
   static Future<List<Map<String, dynamic>>> getUserHistory({
     required String userId,
     int limit = 20,
     int offset = 0,
   }) async {
-    // Try backend API first
-    try {
-      final url = Uri.parse('$historyEndpoint/$userId?limit=$limit&offset=$offset');
-      final response = await http.get(url).timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final list = List<Map<String, dynamic>>.from(data['analyses'] ?? []);
-        if (list.isNotEmpty) return list;
-      }
-    } catch (e) {
-      debugPrint('Backend history failed, trying Firestore: $e');
-    }
-
-    // Fallback: read directly from Firestore users/{userId}/speeches/
-    // This matches the path the backend now saves to AND Firestore security rules
+    // Try Firestore directly first - this always works if rules are set correctly
     try {
       final firestoreDb = FirebaseFirestore.instance;
       final snapshot = await firestoreDb
@@ -163,22 +148,37 @@ class ApiService {
           .limit(limit)
           .get();
 
-      return snapshot.docs.map((doc) {
-        final data = Map<String, dynamic>.from(doc.data());
-        data['id'] = doc.id;
-        data['analysis_id'] = doc.id;
-        // Convert Firestore Timestamp to ISO string
-        final recordedAt = data['recorded_at'];
-        if (recordedAt is Timestamp) {
-          data['timestamp'] = recordedAt.toDate().toIso8601String();
-          data['recorded_at'] = recordedAt.toDate().toIso8601String();
-        }
-        return data;
-      }).toList();
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.map((doc) {
+          final data = Map<String, dynamic>.from(doc.data());
+          data['id'] = doc.id;
+          data['analysis_id'] = doc.id;
+          final recordedAt = data['recorded_at'];
+          if (recordedAt is Timestamp) {
+            data['timestamp'] = recordedAt.toDate().toIso8601String();
+            data['recorded_at'] = recordedAt.toDate().toIso8601String();
+          }
+          return data;
+        }).toList();
+      }
     } catch (e) {
-      debugPrint('Firestore history also failed: $e');
-      return [];
+      debugPrint('Firestore history failed: $e');
     }
+
+    // Fallback: try backend API
+    try {
+      final url = Uri.parse('$historyEndpoint/$userId?limit=$limit&offset=$offset');
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return List<Map<String, dynamic>>.from(data['analyses'] ?? []);
+      }
+    } catch (e) {
+      debugPrint('Backend history failed: $e');
+    }
+
+    return [];
   }
 
   /// Get specific analysis by ID
@@ -225,42 +225,54 @@ class ApiService {
     }
   }
 
-  /// Get user statistics (from backend or Firebase)
+  /// Get user statistics - reads directly from Firestore, never throws
   static Future<Map<String, dynamic>> getUserStatistics({
     required String userId,
   }) async {
+    // Default safe return value
+    final defaultStats = {
+      'total_speeches': 0,
+      'average_score': 0.0,
+      'best_score': 0.0,
+      'total_duration': 0,
+    };
+
     try {
-      // First try to get from history
-      final history = await getUserHistory(userId: userId, limit: 100);
+      // Read directly from Firestore - most reliable, no backend needed
+      final firestoreDb = FirebaseFirestore.instance;
+      final snapshot = await firestoreDb
+          .collection('users')
+          .doc(userId)
+          .collection('speeches')
+          .get();
 
-      if (history.isEmpty) {
-        return {
-          'total_speeches': 0,
-          'average_score': 0.0,
-          'best_score': 0.0,
-          'total_duration': 0,
-        };
-      }
+      if (snapshot.docs.isEmpty) return defaultStats;
 
-      // Calculate statistics
-      int totalSpeeches = history.length;
+      int totalSpeeches = snapshot.docs.length;
       double totalScore = 0;
       double bestScore = 0;
       int totalDuration = 0;
 
-      for (var analysis in history) {
-        double score = (analysis['overall_score'] ?? 0).toDouble();
-        totalScore += score;
-        if (score > bestScore) bestScore = score;
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
 
-        // Parse duration if available
-        var duration = analysis['duration'];
-        if (duration != null && duration['seconds'] != null) {
-          totalDuration += (duration['seconds'] as num).toInt();
+        // Overall score
+        final score = (data['overall_score'] ?? 0);
+        final scoreDouble = score is num ? score.toDouble() : 0.0;
+        totalScore += scoreDouble;
+        if (scoreDouble > bestScore) bestScore = scoreDouble;
+
+        // Duration - stored as string like "5-7 minutes" or seconds int
+        // Just count speeches, don't try to parse duration string
+        final dur = data['speech_duration'];
+        if (dur is num) {
+          totalDuration += dur.toInt();
         }
       }
 
-      double averageScore = totalScore / totalSpeeches;
+      final averageScore = totalSpeeches > 0
+          ? totalScore / totalSpeeches
+          : 0.0;
 
       return {
         'total_speeches': totalSpeeches,
@@ -269,7 +281,8 @@ class ApiService {
         'total_duration': totalDuration,
       };
     } catch (e) {
-      throw Exception('Failed to get statistics: $e');
+      debugPrint('getUserStatistics error: $e');
+      return defaultStats; // Always return safe default, never throw
     }
   }
 

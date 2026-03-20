@@ -319,10 +319,14 @@ class _HomeScreenState extends State<HomeScreen> {
       return _buildEmptyStats();
     }
 
-    final totalSpeeches = _stats!['total_speeches'] as int;
-    final avgScore = (_stats!['average_score'] as num).toDouble();
-    final bestScore = (_stats!['best_score'] as num).toDouble();
-    final totalDuration = _stats!['total_duration'] as int;
+    final totalSpeeches = (_stats!['total_speeches'] ?? 0) as int;
+    final avgScore = ((_stats!['average_score'] ?? 0) as num).toDouble();
+    final bestScore = ((_stats!['best_score'] ?? 0) as num).toDouble();
+    final totalDuration = ((_stats!['total_duration'] ?? 0) as num).toInt();
+
+    if (totalSpeeches == 0) {
+      return _buildEmptyStats();
+    }
 
     return Column(
       children: [
