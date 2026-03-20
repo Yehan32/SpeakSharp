@@ -17,15 +17,15 @@ class FillerWordsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.cardColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Filler Words Analysis',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
       ),
       body: SingleChildScrollView(
@@ -201,7 +201,7 @@ class FillerWordsScreen extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 12,
             ),
@@ -271,7 +271,7 @@ class FillerWordsScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       entry.key,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 15,
                       ),
@@ -380,7 +380,7 @@ class FillerWordsScreen extends StatelessWidget {
                   children: [
                     Text(
                       '"${entry.key}"',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -398,7 +398,7 @@ class FillerWordsScreen extends StatelessWidget {
                       ),
                       child: Text(
                         '${entry.value}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -446,7 +446,7 @@ class FillerWordsScreen extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Colors.orange,
                         shape: BoxShape.circle,
                       ),
@@ -476,7 +476,7 @@ class FillerWordsScreen extends StatelessWidget {
             ),
             child: Text.rich(
               _buildHighlightedTranscription(),
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white70,
                 fontSize: 15,
                 height: 1.6,
@@ -508,7 +508,7 @@ class FillerWordsScreen extends StatelessWidget {
         spans.add(
           TextSpan(
             text: '$word ',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.orange,
               fontWeight: FontWeight.bold,
               backgroundColor: Colors.orange,
@@ -601,7 +601,7 @@ class FillerWordsScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -610,7 +610,7 @@ class FillerWordsScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white60,
                     fontSize: 14,
                     height: 1.4,

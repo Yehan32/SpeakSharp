@@ -480,9 +480,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: const Icon(Icons.delete, color: Colors.white, size: 28),
       ),
       onDismissed: (_) {
+        final deletedSpeech = speech;
         if (analysisId != null) {
           _deleteSpeech(analysisId.toString());
         }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Speech deleted'),
+            backgroundColor: AppTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Undo',
+              textColor: Colors.white,
+              onPressed: () {
+                // Re-insert the deleted speech back into the list
+                setState(() {
+                  _allSpeeches.insert(0, deletedSpeech);
+                  _filteredSpeeches.insert(0, deletedSpeech);
+                });
+              },
+            ),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

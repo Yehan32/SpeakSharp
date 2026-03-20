@@ -36,22 +36,22 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.cardColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Detailed Analysis',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          indicatorColor: AppTheme.primaryColor,
-          labelColor: AppTheme.primaryColor,
-          unselectedLabelColor: Colors.white54,
+          indicatorColor: AppTheme.accentColor,
+          labelColor: AppTheme.accentColor,
+          unselectedLabelColor: AppTheme.textSecondary,
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Fluency'),
@@ -108,7 +108,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
                 const Text(
                   'out of 100',
                   style: TextStyle(
-                    color: Colors.white54,
+                    color: AppTheme.textSecondary,
                     fontSize: 16,
                   ),
                 ),
@@ -258,14 +258,14 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
                       children: [
                         Text(
                           entry.key,
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
                             fontSize: 13,
                           ),
                         ),
                         Text(
                           '${entry.value}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -668,7 +668,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
                           Expanded(
                             child: Text(
                               feedback.toString(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
                                 height: 1.5,
@@ -767,7 +767,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
                           Expanded(
                             child: Text(
                               feedback.toString(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
                                 height: 1.5,
@@ -818,7 +818,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -826,8 +826,8 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
                     ),
                     Text(
                       description,
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -882,7 +882,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
                   ),
@@ -890,7 +890,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
                 if (subtitle != null)
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white38,
                       fontSize: 12,
                     ),
@@ -925,7 +925,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
                 ),
@@ -965,7 +965,7 @@ class _AdvancedAnalysisScreenState extends State<AdvancedAnalysisScreen>
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 14,
             ),

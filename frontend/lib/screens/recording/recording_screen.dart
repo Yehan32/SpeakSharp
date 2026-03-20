@@ -5,6 +5,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
+import 'package:Speak_Sharp/utils/speech_timing_helper.dart';
 import 'playback_screen.dart';
 
 class RecordingScreen extends StatefulWidget {
@@ -346,6 +347,11 @@ class _RecordingScreenState extends State<RecordingScreen>
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+              // Timing feedback
+              _buildTimingFeedback(),
+
               const Spacer(),
 
               // Control Buttons
@@ -452,6 +458,34 @@ class _RecordingScreenState extends State<RecordingScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTimingFeedback() {
+    final timing = SpeechTimingHelper.parseDurationRange(widget.expectedDuration);
+    final minSecs = timing['minSeconds']!;
+    final maxSecs = timing['maxSeconds']!;
+    final message = SpeechTimingHelper.getFeedbackMessage(
+        _recordDuration, minSecs, maxSecs);
+    final color = SpeechTimingHelper.getStatusColor(
+        _recordDuration, minSecs, maxSecs);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Text(
+        message,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 

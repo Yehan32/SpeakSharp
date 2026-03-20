@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:Speak_Sharp/providers/theme_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,6 +19,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _pushNotifications = true;
   bool _darkMode = false;
   double _audioQuality = 0.8;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _analysisDepth = prefs.getString('analysisDepth') ?? 'standard';
+      _expectedDuration = prefs.getString('expectedDuration') ?? '5-7 minutes';
+      _autoSave = prefs.getBool('autoSave') ?? true;
+      _pushNotifications = prefs.getBool('pushNotifications') ?? true;
+      _audioQuality = prefs.getDouble('audioQuality') ?? 0.8;
+    });
+  }
+
+  Future<void> _persistSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('analysisDepth', _analysisDepth);
+    await prefs.setString('expectedDuration', _expectedDuration);
+    await prefs.setBool('autoSave', _autoSave);
+    await prefs.setBool('pushNotifications', _pushNotifications);
+    await prefs.setDouble('audioQuality', _audioQuality);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -610,7 +637,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _saveSettings() {
+  void _saveSettings() async {
+    await _persistSettings();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Settings saved successfully'),
@@ -661,53 +690,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text('Update Password',
             style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold)),
         content: Text(
-            'A password reset link will be sent to: {user.email}',
-        style: TextStyle(color: AppTheme.textSecondary),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+          'A password reset link will be sent to:\n${user.email}',
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accentColor,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            elevation: 0,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
           ),
-          child: const Text('Send Link'),
-        ),
-      ],
-    ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text('Send Link'),
+          ),
+        ],
+      ),
     );
 
     if (confirm != true) return;
 
     try {
-    await FirebaseAuth.instance.sendPasswordResetEmail(email: user.email!);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-    content: Text('Password reset email sent to \${user.email}'),
-    backgroundColor: AppTheme.successColor,
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.all(16),
-    ),
-    );
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: user.email!);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset email sent to \${user.email}'),
+          backgroundColor: AppTheme.successColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
     } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-    content: Text('Failed to send reset email: \$e'),
-    backgroundColor: AppTheme.errorColor,
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.all(16),
-    ),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send reset email: \$e'),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
     }
   }
 

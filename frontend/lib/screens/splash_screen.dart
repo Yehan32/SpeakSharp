@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'dart:async';
 
@@ -9,7 +10,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -33,12 +35,22 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigate after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/onboarding/welcome');
-      }
+    // After animation, check auth state and navigate
+    Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      _navigate();
     });
+  }
+
+  void _navigate() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Already logged in — go straight to home
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      // Not logged in — show onboarding
+      Navigator.of(context).pushReplacementNamed('/onboarding/welcome');
+    }
   }
 
   @override
@@ -103,7 +115,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         child: Center(
                           child: Text(
                             'SS',
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            style:
+                            Theme.of(context).textTheme.displayLarge?.copyWith(
                               fontSize: 48,
                               color: AppTheme.gradientStart,
                               fontWeight: FontWeight.w900,
@@ -114,10 +127,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                       const SizedBox(height: 30),
 
-                      // App Name
                       Text(
                         'Speak Sharp',
-                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        style:
+                        Theme.of(context).textTheme.displayMedium?.copyWith(
                           fontSize: 42,
                           color: Colors.white,
                         ),
@@ -125,7 +138,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                       const SizedBox(height: 8),
 
-                      // Tagline
                       Text(
                         'Speak with Confidence',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
