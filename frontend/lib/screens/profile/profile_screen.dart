@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
-import 'package:Speak_Sharp/services/api_service.dart';
 import 'package:Speak_Sharp/widgets/main_bottom_nav.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -12,394 +14,465 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isLoadingStats = true;
-  Map<String, dynamic>? _stats;
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
     super.initState();
-    _loadStatistics();
   }
 
-  Future<void> _loadStatistics() async {
+  // ─── Photo Upload ──────────────────────────────────────────────────────────
+
+  Future<void> _showPhotoOptions() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Profile Photo',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.camera_alt, color: AppTheme.accentColor),
+              ),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.grammarColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.photo_library, color: AppTheme.grammarColor),
+              ),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            if (FirebaseAuth.instance.currentUser?.photoURL != null)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.errorColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.delete_outline, color: AppTheme.errorColor),
+                ),
+                title: Text('Remove photo',
+                    style: TextStyle(color: AppTheme.errorColor)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _removePhoto();
+                },
+              ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      await _uploadPhoto(File(picked.path));
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Failed to pick image: $e', isError: true);
+    }
+  }
+
+  Future<void> _uploadPhoto(File imageFile) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    setState(() => _isLoadingStats = true);
+    setState(() => _isUploadingPhoto = true);
 
     try {
-      final stats = await ApiService.getUserStatistics(userId: user.uid);
-      if (mounted) {
-        setState(() {
-          _stats = stats;
-          _isLoadingStats = false;
-        });
-      }
+      // Upload to Firebase Storage under profile_photos/{uid}.jpg
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_photos')
+          .child('${user.uid}.jpg');
+
+      await ref.putFile(imageFile);
+      final downloadUrl = await ref.getDownloadURL();
+
+      // Save URL to Firebase Auth profile
+      await user.updatePhotoURL(downloadUrl);
+      await user.reload();
+
+      if (!mounted) return;
+      setState(() {}); // Rebuild with new photo
+      _showSnack('Profile photo updated!');
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingStats = false);
-      }
-      debugPrint('Error loading stats: $e');
+      if (!mounted) return;
+      _showSnack('Failed to upload: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
     }
   }
+
+  Future<void> _removePhoto() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isUploadingPhoto = true);
+
+    try {
+      try {
+        await FirebaseStorage.instance
+            .ref()
+            .child('profile_photos')
+            .child('${user.uid}.jpg')
+            .delete();
+      } catch (_) {}
+
+      await user.updatePhotoURL(null);
+      await user.reload();
+
+      if (!mounted) return;
+      setState(() {});
+      _showSnack('Profile photo removed');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Failed to remove photo: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  void _showSnack(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+        isError ? AppTheme.errorColor : AppTheme.successColor,
+        behavior: SnackBarBehavior.floating,
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // ─── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    // StreamBuilder ensures UI refreshes immediately when photoURL changes
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.userChanges(),
+      builder: (context, snapshot) {
+        final user =
+            snapshot.data ?? FirebaseAuth.instance.currentUser;
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      bottomNavigationBar: const MainBottomNav(currentIndex: 2),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // REDESIGNED Profile Header - Vibrant Gradient!
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
-              decoration: const BoxDecoration(
-                gradient: AppTheme.profileGradient,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
+        if (user == null) {
+          return Scaffold(
+            backgroundColor: AppTheme.backgroundColor,
+            bottomNavigationBar: const MainBottomNav(currentIndex: 2),
+            body: Center(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Avatar with white background
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                  const Icon(Icons.person_off_outlined,
+                      size: 80, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pushReplacementNamed(
+                        context, '/auth/login'),
+                    child: const Text('Go to Login'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          bottomNavigationBar: const MainBottomNav(currentIndex: 2),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                // ── Gradient Header ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
+                  decoration: const BoxDecoration(
+                    gradient: AppTheme.profileGradient,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
                     ),
-                    child: Center(
-                      child: Text(
-                        _getInitials(user!),
-                        style: TextStyle(
-                          color: AppTheme.accentColor,
-                          fontSize: 36,
+                  ),
+                  child: Column(
+                    children: [
+                      // ── Tappable Avatar ──
+                      GestureDetector(
+                        onTap: _isUploadingPhoto
+                            ? null
+                            : _showPhotoOptions,
+                        child: Stack(
+                          children: [
+                            // Circle avatar
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                    Colors.black.withOpacity(0.2),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: _isUploadingPhoto
+                                  ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppTheme.accentColor,
+                                  strokeWidth: 3,
+                                ),
+                              )
+                                  : ClipOval(
+                                child: user.photoURL != null
+                                    ? Image.network(
+                                  user.photoURL!,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                  loadingBuilder: (_, child,
+                                      progress) {
+                                    if (progress == null)
+                                      return child;
+                                    return const Center(
+                                      child:
+                                      CircularProgressIndicator(
+                                        color: AppTheme
+                                            .accentColor,
+                                        strokeWidth: 2,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder:
+                                      (_, __, ___) =>
+                                      _initialsWidget(
+                                          user),
+                                )
+                                    : _initialsWidget(user),
+                              ),
+                            ),
+
+                            // Camera badge — bottom right
+                            if (!_isUploadingPhoto)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 2),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 15,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      Text(
+                        user.displayName ?? 'User',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 4),
 
-                  // Name
-                  Text(
-                    user.displayName ?? 'User',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // Email
-                  Text(
-                    user.email ?? '',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Member since badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Member since ${_getJoinDate(user)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      Text(
+                        user.email ?? '',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
+
+                      const SizedBox(height: 8),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Member since ${_getJoinDate(user)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap photo to change',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Menu ──
+                Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'MENU',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textTertiary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildMenuItem(
+                        Icons.history,
+                        'Speech History',
+                        'View all your past speeches',
+                        AppTheme.voiceColor,
+                            () =>
+                            Navigator.pushNamed(context, '/history'),
+                      ),
+                      _buildMenuItem(
+                        Icons.trending_up,
+                        'Progress Dashboard',
+                        'Track your improvement',
+                        AppTheme.grammarColor,
+                            () =>
+                            Navigator.pushNamed(context, '/progress'),
+                      ),
+                      _buildMenuItem(
+                        Icons.settings_outlined,
+                        'Settings',
+                        'App preferences and account',
+                        AppTheme.structureColor,
+                            () =>
+                            Navigator.pushNamed(context, '/settings'),
+                      ),
+                      _buildMenuItem(
+                        Icons.help_outline,
+                        'Help & Support',
+                        'Get help and FAQs',
+                        AppTheme.proficiencyColor,
+                            () => _showComingSoon(
+                            context, 'Help & Support'),
+                      ),
+                      _buildMenuItem(
+                        Icons.info_outline,
+                        'About',
+                        'App version and info',
+                        AppTheme.textSecondary,
+                            () => _showAboutDialog(context),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildLogoutButton(),
+                ),
+
+                const SizedBox(height: 20),
+              ],
             ),
-
-            const SizedBox(height: 24),
-
-            // Statistics Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'YOUR STATS',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textTertiary,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildStatistics(),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Menu Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'MENU',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textTertiary,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildMenuItem(
-                    Icons.history,
-                    'Speech History',
-                    'View all your past speeches',
-                    AppTheme.voiceColor,
-                        () => Navigator.pushNamed(context, '/history'),
-                  ),
-                  _buildMenuItem(
-                    Icons.trending_up,
-                    'Progress Dashboard',
-                    'Track your improvement',
-                    AppTheme.grammarColor,
-                        () => Navigator.pushNamed(context, '/progress'),
-                  ),
-                  _buildMenuItem(
-                    Icons.settings_outlined,
-                    'Settings',
-                    'App preferences and account',
-                    AppTheme.structureColor,
-                        () => Navigator.pushNamed(context, '/settings'),
-                  ),
-                  _buildMenuItem(
-                    Icons.help_outline,
-                    'Help & Support',
-                    'Get help and FAQs',
-                    AppTheme.proficiencyColor,
-                        () => _showComingSoon(context, 'Help & Support'),
-                  ),
-                  _buildMenuItem(
-                    Icons.info_outline,
-                    'About',
-                    'App version and info',
-                    AppTheme.textSecondary,
-                        () => _showAboutDialog(context),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: _buildLogoutButton(),
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildStatistics() {
-    if (_isLoadingStats) {
-      return Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: AppTheme.cardShadow,
-        ),
-        child: Center(
-          child: CircularProgressIndicator(color: AppTheme.accentColor),
-        ),
-      );
-    }
+  // ─── Helpers ───────────────────────────────────────────────────────────────
 
-    if (_stats == null) {
-      return _buildEmptyStats();
-    }
-
-    final totalSpeeches = _stats!['total_speeches'] as int;
-    final avgScore = (_stats!['average_score'] as num).toDouble();
-    final bestScore = (_stats!['best_score'] as num).toDouble();
-    final totalDuration = _stats!['total_duration'] as int;
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.mic,
-                value: totalSpeeches.toString(),
-                label: 'Speeches',
-                color: AppTheme.voiceColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.star,
-                value: avgScore.toStringAsFixed(1),
-                label: 'Avg Score',
-                color: AppTheme.grammarColor,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.emoji_events,
-                value: bestScore.toStringAsFixed(1),
-                label: 'Best Score',
-                color: AppTheme.successColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.access_time,
-                value: _formatDuration(totalDuration),
-                label: 'Total Time',
-                color: AppTheme.proficiencyColor,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
+  Widget _initialsWidget(User user) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppTheme.getColoredShadow(color),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 2,
+      color: Colors.white,
+      alignment: Alignment.center,
+      child: Text(
+        _getInitials(user),
+        style: TextStyle(
+          color: AppTheme.accentColor,
+          fontSize: 36,
+          fontWeight: FontWeight.bold,
         ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyStats() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.analytics_outlined,
-              size: 48,
-              color: AppTheme.accentColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No statistics yet',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Record your first speech to see your stats here',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -421,10 +494,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: AppTheme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: AppTheme.cardShadow,
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 2,
-          ),
+          border:
+          Border.all(color: color.withOpacity(0.2), width: 2),
         ),
         child: Row(
           children: [
@@ -441,26 +512,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text(title,
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      )),
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary)),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: AppTheme.textTertiary, size: 16),
+            Icon(Icons.arrow_forward_ios,
+                color: AppTheme.textTertiary, size: 16),
           ],
         ),
       ),
@@ -471,32 +538,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.errorColor,
-            AppTheme.errorColor.withOpacity(0.8),
-          ],
-        ),
-        boxShadow: AppTheme.getColoredShadow(AppTheme.errorColor),
+        gradient: LinearGradient(colors: [
+          AppTheme.errorColor,
+          AppTheme.errorColor.withOpacity(0.8),
+        ]),
+        boxShadow:
+        AppTheme.getColoredShadow(AppTheme.errorColor),
       ),
       child: ElevatedButton.icon(
         onPressed: _handleLogout,
-        icon: const Icon(Icons.logout, color: Colors.white),
-        label: const Text(
-          'Logout',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        icon:
+        const Icon(Icons.logout, color: Colors.white),
+        label: const Text('Logout',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w700)),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          padding:
+          const EdgeInsets.symmetric(vertical: 18),
+          minimumSize:
+          const Size(double.infinity, 0),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+              borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );
@@ -506,29 +572,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Logout',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to logout?',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: Text('Logout',
+            style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to logout?',
+            style: TextStyle(color: AppTheme.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
+            child: Text('Cancel',
+                style:
+                TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+            style: TextButton.styleFrom(
+                foregroundColor: AppTheme.errorColor),
             child: const Text('Logout'),
           ),
         ],
@@ -539,9 +601,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/auth/login',
-            (route) => false,
-      );
+          '/auth/login', (_) => false);
     }
   }
 
@@ -549,25 +609,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Coming Soon',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          '$feature feature is under development.',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: Text('Coming Soon',
+            style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold)),
+        content: Text('$feature feature is under development.',
+            style: TextStyle(color: AppTheme.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'OK',
-              style: TextStyle(color: AppTheme.accentColor),
-            ),
+            child: Text('OK',
+                style: TextStyle(color: AppTheme.accentColor)),
           ),
         ],
       ),
@@ -578,44 +632,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'About SpeakSharp',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: Text('About SpeakSharp',
+            style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Version 1.0.0',
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text('Version 1.0.0',
+                style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Text(
               'SpeakSharp helps you improve your public speaking skills with AI-powered analysis and feedback.',
               style: TextStyle(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 16),
-            Text(
-              '© 2026 SpeakSharp',
-              style: TextStyle(fontSize: 12, color: AppTheme.textTertiary),
-            ),
+            Text('© 2026 SpeakSharp',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textTertiary)),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'OK',
-              style: TextStyle(color: AppTheme.accentColor),
-            ),
+            child: Text('OK',
+                style: TextStyle(color: AppTheme.accentColor)),
           ),
         ],
       ),
@@ -623,38 +670,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _getInitials(User user) {
-    if (user.displayName != null && user.displayName!.isNotEmpty) {
+    if (user.displayName != null &&
+        user.displayName!.isNotEmpty) {
       final parts = user.displayName!.split(' ');
       if (parts.length >= 2) {
         return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
       }
       return user.displayName![0].toUpperCase();
     }
-    return user.email![0].toUpperCase();
+    if (user.email != null && user.email!.isNotEmpty) {
+      return user.email![0].toUpperCase();
+    }
+    return 'U';
   }
 
   String _getJoinDate(User user) {
     if (user.metadata.creationTime != null) {
       final date = user.metadata.creationTime!;
-      final months = [
+      const months = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ];
       return '${months[date.month - 1]} ${date.year}';
     }
     return 'Recently';
-  }
-
-  String _formatDuration(int seconds) {
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m';
-    } else {
-      return '${seconds}s';
-    }
   }
 }
