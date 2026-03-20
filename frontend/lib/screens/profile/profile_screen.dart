@@ -237,7 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: AppTheme.profileGradient,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(30),
@@ -334,7 +334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       Text(
                         user.displayName ?? 'User',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -362,7 +362,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         child: Text(
                           'Member since ${_getJoinDate(user)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -401,14 +401,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _buildMenuItem(
-                        Icons.history,
-                        'Speech History',
-                        'View all your past speeches',
-                        AppTheme.voiceColor,
-                            () =>
-                            Navigator.pushNamed(context, '/history'),
-                      ),
                       _buildMenuItem(
                         Icons.trending_up,
                         'Progress Dashboard',
