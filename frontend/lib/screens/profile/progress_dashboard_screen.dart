@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
+import 'package:Speak_Sharp/widgets/main_bottom_nav.dart';
 import 'package:Speak_Sharp/services/api_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -71,6 +72,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      bottomNavigationBar: const MainBottomNav(currentIndex: 1),
       appBar: AppBar(
         backgroundColor: AppTheme.cardColor,
         title: Text(
@@ -258,7 +260,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -541,7 +543,7 @@ class _ProgressDashboardScreenState extends State<ProgressDashboardScreen> {
           const SizedBox(height: 12),
           Text(
             isImproving ? 'Great Progress!' : 'Keep Practicing!',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,

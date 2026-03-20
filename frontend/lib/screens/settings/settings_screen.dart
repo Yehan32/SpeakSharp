@@ -153,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Center(
               child: Text(
                 _getInitials(user),
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -425,7 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.lock,
             title: 'Update your password',
             subtitle: 'Change account password',
-            onTap: _showComingSoon,
+            onTap: _updatePassword,
             color: AppTheme.textSecondary,
           ),
           Divider(height: 1, color: AppTheme.textTertiary.withOpacity(0.1)),
@@ -648,6 +648,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _updatePassword() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Update Password',
+            style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
+            'A password reset link will be sent to:
+            \${user.email}',
+        style: TextStyle(color: AppTheme.textSecondary),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.accentColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
+          ),
+          child: const Text('Send Link'),
+        ),
+      ],
+    ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: user.email!);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+    content: Text('Password reset email sent to \${user.email}'),
+    backgroundColor: AppTheme.successColor,
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.all(16),
+    ),
+    );
+    } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+    content: Text('Failed to send reset email: \$e'),
+    backgroundColor: AppTheme.errorColor,
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.all(16),
+    ),
+    );
+    }
   }
 
   void _confirmDeleteAccount() {

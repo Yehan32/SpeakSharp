@@ -133,16 +133,16 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.cardColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Upload Recording',
           style: TextStyle(color: AppTheme.textPrimary),
         ),
         leading: _isUploading
             ? null
             : IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -160,17 +160,17 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppTheme.accentColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppTheme.primaryColor.withOpacity(0.3),
+                color: AppTheme.accentColor.withOpacity(0.3),
               ),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.info_outline,
-                  color: AppTheme.primaryColor,
+                  color: AppTheme.accentColor,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -202,7 +202,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                 border: Border.all(
                   color: _selectedFile != null
                       ? AppTheme.primaryColor
-                      : Colors.white.withOpacity(0.2),
+                      : AppTheme.textTertiary.withOpacity(0.3),
                   width: 2,
                 ),
               ),
@@ -213,8 +213,8 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _selectedFile != null
-                          ? AppTheme.primaryColor.withOpacity(0.2)
-                          : Colors.white.withOpacity(0.1),
+                          ? AppTheme.accentColor.withOpacity(0.2)
+                          : AppTheme.accentColor.withOpacity(0.05),
                     ),
                     child: Icon(
                       _selectedFile != null
@@ -222,7 +222,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                           : Icons.upload_file,
                       size: 48,
                       color: _selectedFile != null
-                          ? AppTheme.primaryColor
+                          ? AppTheme.accentColor
                           : AppTheme.textTertiary,
                     ),
                   ),
@@ -231,7 +231,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                     _selectedFile != null
                         ? _selectedFile!.path.split('/').last
                         : 'Tap to select audio file',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -268,15 +268,15 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
 
           TextField(
             controller: _topicController,
-            style: const TextStyle(color: AppTheme.textPrimary),
+            style: TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Topic *',
-              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+              labelStyle: TextStyle(color: AppTheme.textSecondary),
               hintText: 'e.g., Climate Change',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              hintStyle: TextStyle(color: AppTheme.textTertiary),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.topic, color: AppTheme.textTertiary),
+              prefixIcon: Icon(Icons.topic, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -290,13 +290,13 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           DropdownButtonFormField<String>(
             value: _selectedDuration,
             dropdownColor: AppTheme.cardColor,
-            style: const TextStyle(color: AppTheme.textPrimary),
+            style: TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Expected Duration',
-              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+              labelStyle: TextStyle(color: AppTheme.textSecondary),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.timer, color: AppTheme.textTertiary),
+              prefixIcon: Icon(Icons.timer, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -319,13 +319,13 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           DropdownButtonFormField<String>(
             value: _selectedDepth,
             dropdownColor: AppTheme.cardColor,
-            style: const TextStyle(color: AppTheme.textPrimary),
+            style: TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Analysis Depth',
-              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+              labelStyle: TextStyle(color: AppTheme.textSecondary),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.analytics, color: AppTheme.textTertiary),
+              prefixIcon: Icon(Icons.analytics, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -354,13 +354,13 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           DropdownButtonFormField<String>(
             value: _selectedGender,
             dropdownColor: AppTheme.cardColor,
-            style: const TextStyle(color: AppTheme.textPrimary),
+            style: TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               labelText: 'Gender (for voice analysis)',
-              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+              labelStyle: TextStyle(color: AppTheme.textSecondary),
               filled: true,
               fillColor: AppTheme.cardColor,
-              prefixIcon: const Icon(Icons.person, color: AppTheme.textTertiary),
+              prefixIcon: Icon(Icons.person, color: AppTheme.textTertiary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -390,7 +390,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _selectedFile != null ? _uploadAndAnalyze : null,
-              icon: const Icon(Icons.cloud_upload),
+              icon: Icon(Icons.cloud_upload),
               label: const Text(
                 'Upload & Analyze',
                 style: TextStyle(
@@ -399,7 +399,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: AppTheme.accentColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
@@ -425,24 +425,19 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.primaryColor.withOpacity(0.7),
-                  ],
-                ),
+                gradient: AppTheme.primaryGradient,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    color: AppTheme.accentColor.withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.cloud_upload,
                 size: 64,
-                color: AppTheme.textPrimary,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 40),
@@ -469,9 +464,9 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: _uploadProgress,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: AppTheme.accentColor.withOpacity(0.1),
                   valueColor:
-                  AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                  AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
                   minHeight: 10,
                 ),
               ),
@@ -479,7 +474,7 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
             const SizedBox(height: 16),
             Text(
               '${(_uploadProgress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,

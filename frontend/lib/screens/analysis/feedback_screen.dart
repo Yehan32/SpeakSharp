@@ -386,20 +386,27 @@ class _FeedbackScreenState extends State<FeedbackScreen>
               ),
               _buildInsight(
                 'Strengths',
-                (widget.speech.grammarScore ?? 0) > 15
-                    ? 'Excellent grammar and vocabulary'
-                    : 'Work on grammar and word choice',
+                _getStrengths(),
                 Icons.trending_up,
               ),
               _buildInsight(
                 'Areas to Improve',
-                (widget.speech.structureScore ?? 0) < 10
-                    ? 'Focus on speech structure and organization'
-                    : 'Continue refining your delivery',
+                _getAreasToImprove(),
                 Icons.flag,
               ),
             ],
           ),
+          if ((widget.speech.suggestions ?? []).isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildSectionCard(
+              'AI Suggestions',
+              Icons.auto_awesome,
+              AppTheme.accentColor,
+              (widget.speech.suggestions ?? []).take(5).map((s) =>
+                  _buildRecommendation(s)
+              ).toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -582,7 +589,7 @@ class _FeedbackScreenState extends State<FeedbackScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.2)),
         boxShadow: AppTheme.getColoredShadow(color),
@@ -734,4 +741,32 @@ class _FeedbackScreenState extends State<FeedbackScreen>
 
     return '${date.day}/${date.month}/${date.year}';
   }
+
+  String _getStrengths() {
+    final scores = {
+      'Grammar & Vocabulary': widget.speech.grammarScore ?? 0,
+      'Voice Modulation': widget.speech.voiceScore ?? 0,
+      'Structure': widget.speech.structureScore ?? 0,
+      'Effectiveness': widget.speech.effectivenessScore ?? 0,
+      'Fluency': widget.speech.proficiencyScore ?? 0,
+    };
+    final best = scores.entries.reduce((a, b) => a.value >= b.value ? a : b);
+    if (best.value >= 15) return 'Excellent \${best.key}!';
+    if (best.value >= 10) return 'Good \${best.key}';
+    return 'Keep practicing to build your strengths';
+  }
+
+  String _getAreasToImprove() {
+    final scores = {
+      'Grammar & Vocabulary': widget.speech.grammarScore ?? 0,
+      'Voice Modulation': widget.speech.voiceScore ?? 0,
+      'Structure': widget.speech.structureScore ?? 0,
+      'Effectiveness': widget.speech.effectivenessScore ?? 0,
+      'Fluency': widget.speech.proficiencyScore ?? 0,
+    };
+    final worst = scores.entries.reduce((a, b) => a.value <= b.value ? a : b);
+    if (worst.value < 10) return 'Focus on improving \${worst.key}';
+    return 'Continue refining your overall delivery';
+  }
+
 }

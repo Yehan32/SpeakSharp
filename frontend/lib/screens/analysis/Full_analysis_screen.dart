@@ -67,14 +67,14 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.cardColor,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               topic,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -149,7 +149,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
             child: Center(
               child: Text(
                 overallScore.toStringAsFixed(0),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -173,7 +173,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
                 const SizedBox(height: 4),
                 Text(
                   _getScoreLabel(overallScore),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -321,7 +321,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -419,7 +419,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 12,
             ),
@@ -505,7 +505,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 14,
               ),
@@ -513,7 +513,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -556,7 +556,7 @@ class _FullAnalysisScreenState extends State<FullAnalysisScreen> {
               const SizedBox(height: 16),
               SelectableText(
                 transcription,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 15,
                   height: 1.6,

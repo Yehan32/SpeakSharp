@@ -422,14 +422,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: () => _showRecordingSetupDialog(),
-                icon: const Icon(Icons.mic),
-                label: const Text('Start Recording'),
+                icon: Icon(Icons.mic),
+                label: Text('Start Recording'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accentColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 14,
+                    horizontal: 24, vertical: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pushNamed(context, '/upload-audio'),
+                icon: Icon(Icons.upload_file, color: AppTheme.accentColor),
+                label: Text('Upload Recording',
+                    style: TextStyle(color: AppTheme.accentColor)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: AppTheme.accentColor),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),

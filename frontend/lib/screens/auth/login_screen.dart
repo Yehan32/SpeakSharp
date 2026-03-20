@@ -279,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.backgroundColor,
         body: SafeArea(
           child: Column(
             children: [
@@ -393,7 +393,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: TextButton(
                             onPressed: _isLoading ? null : _handleForgotPassword,
                             child: Text(
-                              'Forgot password?',
+                              'Forgot?',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppTheme.accentColor,
                                 fontWeight: FontWeight.w600,
