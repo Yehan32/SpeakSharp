@@ -393,7 +393,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: TextButton(
                             onPressed: _isLoading ? null : _handleForgotPassword,
                             child: Text(
-                              'Forgot?',
+                              'Forgot password?',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppTheme.accentColor,
                                 fontWeight: FontWeight.w600,

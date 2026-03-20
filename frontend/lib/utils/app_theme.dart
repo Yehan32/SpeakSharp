@@ -292,4 +292,114 @@ class AppTheme {
         return accentColor;
     }
   }
+
+  // ── Dark Mode Colors ─────────────────────────────────────────────────────
+  static const Color darkBackground   = Color(0xFF0F0F0F);
+  static const Color darkCard         = Color(0xFF1E1E1E);
+  static const Color darkTextPrimary  = Color(0xFFF0F0F0);
+  static const Color darkTextSecondary= Color(0xFFAAAAAA);
+  static const Color darkTextTertiary = Color(0xFF666666);
+  static const Color darkBorder       = Color(0xFF2A2A2A);
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: accentColor,
+      scaffoldBackgroundColor: darkBackground,
+      colorScheme: const ColorScheme.dark(
+        primary: accentColor,
+        secondary: accentColor,
+        surface: darkCard,
+        error: errorColor,
+      ),
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.manrope(
+            fontSize: 38, fontWeight: FontWeight.w800, color: darkTextPrimary),
+        displayMedium: GoogleFonts.manrope(
+            fontSize: 32, fontWeight: FontWeight.w800, color: darkTextPrimary),
+        displaySmall: GoogleFonts.manrope(
+            fontSize: 28, fontWeight: FontWeight.w800, color: darkTextPrimary),
+        headlineMedium: GoogleFonts.manrope(
+            fontSize: 24, fontWeight: FontWeight.w700, color: darkTextPrimary),
+        headlineSmall: GoogleFonts.lexend(
+            fontSize: 20, fontWeight: FontWeight.w700, color: darkTextPrimary),
+        titleLarge: GoogleFonts.lexend(
+            fontSize: 18, fontWeight: FontWeight.w700, color: darkTextPrimary),
+        titleMedium: GoogleFonts.lexend(
+            fontSize: 16, fontWeight: FontWeight.w600, color: darkTextPrimary),
+        bodyLarge: GoogleFonts.lexend(
+            fontSize: 16, fontWeight: FontWeight.w400, color: darkTextSecondary),
+        bodyMedium: GoogleFonts.lexend(
+            fontSize: 14, fontWeight: FontWeight.w400, color: darkTextSecondary),
+        bodySmall: GoogleFonts.lexend(
+            fontSize: 12, fontWeight: FontWeight.w400, color: darkTextTertiary),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accentColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 0,
+          textStyle: GoogleFonts.lexend(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accentColor,
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+          side: const BorderSide(color: accentColor, width: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          textStyle: GoogleFonts.lexend(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkCard,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: darkBorder, width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: darkBorder, width: 2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: accentColor, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: errorColor, width: 2),
+        ),
+        hintStyle: GoogleFonts.lexend(fontSize: 16, color: darkTextTertiary),
+      ),
+      cardTheme: CardThemeData(
+        color: darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: darkCard,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.manrope(
+            fontSize: 26, fontWeight: FontWeight.w800, color: darkTextPrimary),
+        iconTheme: const IconThemeData(color: darkTextPrimary),
+      ),
+      dividerColor: darkBorder,
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+                (s) => s.contains(WidgetState.selected) ? accentColor : darkTextTertiary),
+        trackColor: WidgetStateProperty.resolveWith(
+                (s) => s.contains(WidgetState.selected)
+                ? accentColor.withOpacity(0.4)
+                : darkBorder),
+      ),
+    );
+  }
+
 }

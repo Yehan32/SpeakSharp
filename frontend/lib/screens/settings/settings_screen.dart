@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:Speak_Sharp/providers/theme_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 
@@ -351,6 +353,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAppearance() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -364,9 +367,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: _buildSwitchSetting(
         icon: Icons.dark_mode,
         title: 'Dark Mode',
-        subtitle: 'Use dark theme (always on)',
-        value: _darkMode,
-        onChanged: (value) => setState(() => _darkMode = value),
+        subtitle: 'Switch between light and dark theme',
+        value: themeProvider.isDarkMode,
+        onChanged: (value) => themeProvider.setDarkMode(value),
         color: AppTheme.accentColor,
       ),
     );

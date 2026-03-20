@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:Speak_Sharp/providers/auth_provider.dart';
+import 'package:Speak_Sharp/providers/theme_provider.dart';
 import 'package:Speak_Sharp/providers/speech_provider.dart';
 import 'package:Speak_Sharp/utils/app_theme.dart';
 import 'package:Speak_Sharp/models/speech_model.dart';
@@ -44,83 +45,88 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => SpeechProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'Speak Sharp',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        initialRoute: '/splash',
-        onGenerateRoute: (settings) {
-          if (settings.name == '/recording') {
-            final args = settings.arguments as Map<String, dynamic>?;
-            return MaterialPageRoute(
-              builder: (context) => RecordingScreen(
-                topic: args?['topic'] ?? 'Untitled',
-                expectedDuration: args?['expectedDuration'] ?? '1-2 minutes',
-              ),
-            );
-          }
-          if (settings.name == '/playback') {
-            final args = settings.arguments as Map<String, dynamic>?;
-            return MaterialPageRoute(
-              builder: (context) => PlaybackScreen(
-                audioPath: args?['audioPath'] ?? '',
-                topic: args?['topic'] ?? 'Untitled',
-                expectedDuration: args?['expectedDuration'] ?? '1-2 minutes',
-                recordingDuration: args?['recordingDuration'] ?? 0,
-              ),
-            );
-          }
-          if (settings.name == '/feedback') {
-            final args = settings.arguments as Map<String, dynamic>?;
-            return MaterialPageRoute(
-              builder: (context) => FeedbackScreen(
-                speech: args?['speech'] ?? SpeechModel.fromJson(args?['analysisResults'] ?? {}),
-              ),
-            );
-          }
-          if (settings.name == '/filler-words') {
-            final args = settings.arguments as Map<String, dynamic>?;
-            return MaterialPageRoute(
-              builder: (context) => FillerWordsScreen(
-                fillerAnalysis: args?['fillerAnalysis'] ?? {},
-                transcription: args?['transcription'] ?? '',
-              ),
-            );
-          }
-          if (settings.name == '/advanced-analysis') {
-            final args = settings.arguments as Map<String, dynamic>?;
-            return MaterialPageRoute(
-              builder: (context) => AdvancedAnalysisScreen(
-                analysisResults: args?['analysisResults'] ?? {},
-              ),
-            );
-          }
-          return null;
-        },
-        routes: {
-          '/upload-audio': (context) => const UploadAudioScreen(),
-          '/splash': (context) => const SplashScreen(),
-          '/onboarding/welcome': (context) => const WelcomeScreen(),
-          '/onboarding/features': (context) => const FeaturesScreen(),
-          '/onboarding/ready': (context) => const ReadyScreen(),
-          '/onboarding/tutorial': (context) => const TutorialScreen(),
-          '/onboarding/startup': (context) => const StartupConfigScreen(),
-          '/auth/login': (context) => const LoginScreen(),
-          '/auth/register': (context) => const RegisterScreen(),
-          '/home': (context) => const HomeScreen(),
-          '/history': (context) => const HistoryScreen(),
-          '/search': (context) => const SearchScreen(),
-          '/profile': (context) => const ProfileScreen(),
-          '/progress': (context) => const ProgressDashboardScreen(),
-          '/settings': (context) => const SettingsScreen(),
-          '/notifications': (context) => const NotificationCenterScreen(),
-          '/payment': (context) => const PaymentScreen(),
-          '/full-analysis': (context) {
-            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-            return FullAnalysisScreen(analysisData: args);
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) => MaterialApp(
+          title: 'Speak Sharp',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.themeMode,
+          initialRoute: '/splash',
+          onGenerateRoute: (settings) {
+            if (settings.name == '/recording') {
+              final args = settings.arguments as Map<String, dynamic>?;
+              return MaterialPageRoute(
+                builder: (context) => RecordingScreen(
+                  topic: args?['topic'] ?? 'Untitled',
+                  expectedDuration: args?['expectedDuration'] ?? '1-2 minutes',
+                ),
+              );
+            }
+            if (settings.name == '/playback') {
+              final args = settings.arguments as Map<String, dynamic>?;
+              return MaterialPageRoute(
+                builder: (context) => PlaybackScreen(
+                  audioPath: args?['audioPath'] ?? '',
+                  topic: args?['topic'] ?? 'Untitled',
+                  expectedDuration: args?['expectedDuration'] ?? '1-2 minutes',
+                  recordingDuration: args?['recordingDuration'] ?? 0,
+                ),
+              );
+            }
+            if (settings.name == '/feedback') {
+              final args = settings.arguments as Map<String, dynamic>?;
+              return MaterialPageRoute(
+                builder: (context) => FeedbackScreen(
+                  speech: args?['speech'] ?? SpeechModel.fromJson(args?['analysisResults'] ?? {}),
+                ),
+              );
+            }
+            if (settings.name == '/filler-words') {
+              final args = settings.arguments as Map<String, dynamic>?;
+              return MaterialPageRoute(
+                builder: (context) => FillerWordsScreen(
+                  fillerAnalysis: args?['fillerAnalysis'] ?? {},
+                  transcription: args?['transcription'] ?? '',
+                ),
+              );
+            }
+            if (settings.name == '/advanced-analysis') {
+              final args = settings.arguments as Map<String, dynamic>?;
+              return MaterialPageRoute(
+                builder: (context) => AdvancedAnalysisScreen(
+                  analysisResults: args?['analysisResults'] ?? {},
+                ),
+              );
+            }
+            return null;
           },
-        },
+          routes: {
+            '/upload-audio': (context) => const UploadAudioScreen(),
+            '/splash': (context) => const SplashScreen(),
+            '/onboarding/welcome': (context) => const WelcomeScreen(),
+            '/onboarding/features': (context) => const FeaturesScreen(),
+            '/onboarding/ready': (context) => const ReadyScreen(),
+            '/onboarding/tutorial': (context) => const TutorialScreen(),
+            '/onboarding/startup': (context) => const StartupConfigScreen(),
+            '/auth/login': (context) => const LoginScreen(),
+            '/auth/register': (context) => const RegisterScreen(),
+            '/home': (context) => const HomeScreen(),
+            '/history': (context) => const HistoryScreen(),
+            '/search': (context) => const SearchScreen(),
+            '/profile': (context) => const ProfileScreen(),
+            '/progress': (context) => const ProgressDashboardScreen(),
+            '/settings': (context) => const SettingsScreen(),
+            '/notifications': (context) => const NotificationCenterScreen(),
+            '/payment': (context) => const PaymentScreen(),
+            '/full-analysis': (context) {
+              final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+              return FullAnalysisScreen(analysisData: args);
+            },
+          },
+        ),
       ),
     );
   }
