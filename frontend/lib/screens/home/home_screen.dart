@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: 'Start Recording',
                         subtitle: 'Begin a new speech session',
                         gradient: AppTheme.primaryGradient,
-                        onTap: () => Navigator.pushNamed(context, '/recording'),
+                        onTap: () => _showRecordingSetupDialog(context),
                       ),
 
                       const SizedBox(height: 16),
@@ -733,5 +733,137 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       return '${seconds}s';
     }
+  }
+
+  // Show setup dialog before recording — collects topic and duration
+  void _showRecordingSetupDialog(BuildContext context) {
+    final topicController = TextEditingController();
+    String selectedDuration = '5-7 minutes';
+
+    final durations = [
+      '1-2 minutes',
+      '3-5 minutes',
+      '5-7 minutes',
+      '7-10 minutes',
+      '10-15 minutes',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'New Recording',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Speech Topic',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: topicController,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Climate Change, Leadership...',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Expected Duration',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedDuration,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                items: durations.map((d) => DropdownMenuItem(
+                  value: d,
+                  child: Text(d),
+                )).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setDialogState(() => selectedDuration = val);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final topic = topicController.text.trim();
+                Navigator.pop(dialogContext);
+                Navigator.pushNamed(
+                  context,
+                  '/recording',
+                  arguments: {
+                    'topic': topic.isEmpty ? 'General Speech' : topic,
+                    'expectedDuration': selectedDuration,
+                  },
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Start Recording',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

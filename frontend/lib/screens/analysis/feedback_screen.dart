@@ -366,8 +366,7 @@ class _FeedbackScreenState extends State<FeedbackScreen>
             [
               _buildInfoRow('Topic', widget.speech.topic ?? 'Not specified'),
               _buildInfoRow('Duration', widget.speech.duration ?? 'Unknown'),
-              _buildInfoRow(
-                  'Date', widget.speech.createdAt?.toString() ?? 'Unknown'),
+              _buildInfoRow('Date', _formatDate(widget.speech.createdAt)),
             ],
           ),
           const SizedBox(height: 16),
@@ -720,5 +719,19 @@ class _FeedbackScreenState extends State<FeedbackScreen>
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Unknown';
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes} minutes ago';
+    if (diff.inDays == 0) return 'Today ${date.hour.toString().padLeft(2,'0')}:${date.minute.toString().padLeft(2,'0')}';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

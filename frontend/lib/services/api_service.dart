@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ApiService {
   static const String baseUrl = "https://speaksharp-production.up.railway.app";
@@ -129,25 +131,48 @@ class ApiService {
     }
   }
 
-  /// Get user's speech history
+  /// Get user's speech history - tries backend first, falls back to Firestore directly
   static Future<List<Map<String, dynamic>>> getUserHistory({
     required String userId,
     int limit = 20,
     int offset = 0,
   }) async {
+    // Try backend API first
     try {
       final url = Uri.parse('$historyEndpoint/$userId?limit=$limit&offset=$offset');
-
-      final response = await http.get(url).timeout(const Duration(seconds: 30));
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data['analyses'] ?? []);
-      } else {
-        throw Exception('Failed to get history: ${response.statusCode}');
+        final list = List<Map<String, dynamic>>.from(data['analyses'] ?? []);
+        if (list.isNotEmpty) return list;
       }
     } catch (e) {
-      throw Exception('Failed to fetch history: $e');
+      debugPrint('Backend history failed, trying Firestore: $e');
+    }
+
+    // Fallback: read directly from Firestore
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final snapshot = await firestore
+          .collection('analyses')
+          .where('user_id', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data());
+        data['id'] = doc.id;
+        // Convert Timestamp to ISO string for consistency
+        if (data['timestamp'] is Timestamp) {
+          data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
+        }
+        return data;
+      }).toList();
+    } catch (e) {
+      debugPrint('Firestore history also failed: $e');
+      return []; // Return empty instead of crashing
     }
   }
 

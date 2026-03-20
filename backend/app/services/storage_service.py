@@ -83,11 +83,16 @@ class StorageService:
                 "analysis_id": analysis_id,
                 "user_id": user_id,
                 "speech_title": speech_title or "Untitled Speech",
+                "topic": results.get("topic") or speech_title or "Not specified",
                 "timestamp": datetime.now(),
+                "overall_score": results.get("overall_score", 0),
                 "scores": results.get("scores", {}),
-                "summary": results.get("summary", {}),
-                "metadata": results.get("metadata", {}),
-                "transcription_preview": results.get("transcription", "")[:500]  # First 500 chars
+                "duration": results.get("duration", "N/A"),
+                "processing_time": results.get("processing_time", 0),
+                # Flat metrics so history screen can show them
+                "filler_word_count": results.get("filler_word_count", 0),
+                "words_per_minute": results.get("words_per_minute", "N/A"),
+                "transcription_preview": results.get("transcription", "")[:500]
             }
             
             # Save main document

@@ -204,7 +204,7 @@ class _RecordingScreenState extends State<RecordingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -259,6 +259,18 @@ class _RecordingScreenState extends State<RecordingScreen>
           child: Column(
             children: [
               const SizedBox(height: 40),
+
+              // Topic display
+              Text(
+                widget.topic,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 8),
 
               // Expected Duration Info
               Container(
