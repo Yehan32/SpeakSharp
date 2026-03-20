@@ -422,8 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         'Help & Support',
                         'Get help and FAQs',
                         AppTheme.proficiencyColor,
-                            () => _showComingSoon(
-                            context, 'Help & Support'),
+                            () => _showHelpSupport(context),
                       ),
                       _buildMenuItem(
                         Icons.info_outline,
@@ -686,5 +685,226 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return '${months[date.month - 1]} ${date.year}';
     }
     return 'Recently';
+  }
+
+  void _showHelpSupport(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (_, controller) => Container(
+          decoration: BoxDecoration(
+            color: AppTheme.backgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              const SizedBox(height: 12),
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.textTertiary.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Icon(Icons.help_outline,
+                        color: AppTheme.proficiencyColor, size: 24),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Help & Support',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  controller: controller,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  children: [
+                    // Contact section
+                    _buildHelpSection(
+                      icon: Icons.email_outlined,
+                      color: AppTheme.accentColor,
+                      title: 'Contact Us',
+                      subtitle: 'yehanheenpella@gmail.com',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Email: yehanheenpella@gmail.com'),
+                            backgroundColor: AppTheme.accentColor,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            margin: const EdgeInsets.all(16),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // FAQ heading
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'FREQUENTLY ASKED QUESTIONS',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textTertiary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+
+                    _buildFaqItem(
+                      'How does speech analysis work?',
+                      'SpeakSharp records your speech, sends it to our AI backend which transcribes it using OpenAI Whisper, then analyzes grammar, voice modulation, structure, fluency, and vocabulary to give you a detailed score.',
+                    ),
+                    _buildFaqItem(
+                      'How long does analysis take?',
+                      'Analysis typically takes 1-2 minutes depending on the length of your speech and your internet connection speed.',
+                    ),
+                    _buildFaqItem(
+                      'What audio formats are supported?',
+                      'You can upload MP3, WAV, M4A, OGG, and FLAC files up to 50MB. For best results, record in a quiet environment.',
+                    ),
+                    _buildFaqItem(
+                      'Why is my score low?',
+                      'Scores are based on grammar accuracy, voice variation, speech structure (intro/body/conclusion), fluency (filler words, pauses), and vocabulary richness. Focus on the lowest scoring category to improve.',
+                    ),
+                    _buildFaqItem(
+                      'Is my speech data private?',
+                      'Your recordings are processed securely and stored under your account only. We do not share your data with third parties.',
+                    ),
+                    _buildFaqItem(
+                      'How do I improve my score?',
+                      'Practice regularly, reduce filler words (um, uh, like), vary your pitch and tone, structure your speech with a clear intro and conclusion, and expand your vocabulary.',
+                    ),
+                    _buildFaqItem(
+                      'Can I delete my recordings?',
+                      'Yes. In the History screen, swipe left on any recording to delete it.',
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpSection({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.cardShadow,
+          border: Border.all(color: color.withOpacity(0.2), width: 2),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 13)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios,
+                color: AppTheme.textTertiary, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFaqItem(String question, String answer) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          tilePadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding:
+          const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          iconColor: AppTheme.accentColor,
+          collapsedIconColor: AppTheme.textTertiary,
+          title: Text(
+            question,
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          children: [
+            Text(
+              answer,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
