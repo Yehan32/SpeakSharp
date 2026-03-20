@@ -204,42 +204,39 @@ class _RecordingScreenState extends State<RecordingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.cardColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(Icons.close, color: AppTheme.textPrimary),
           onPressed: () async {
-            // Show confirmation dialog
             final shouldExit = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
-                backgroundColor: AppTheme.cardColor,
-                title: const Text(
-                  'Cancel Recording?',
-                  style: TextStyle(color: Colors.white),
-                ),
-                content: const Text(
-                  'Your recording will be lost.',
-                  style: TextStyle(color: Colors.white70),
-                ),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                title: Text('Cancel Recording?',
+                    style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.bold)),
+                content: Text('Your recording will be lost.',
+                    style: TextStyle(color: AppTheme.textSecondary)),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Continue Recording'),
+                    child: Text('Continue',
+                        style: TextStyle(color: AppTheme.accentColor)),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context, true),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
+                        foregroundColor: AppTheme.errorColor),
                     child: const Text('Cancel'),
                   ),
                 ],
               ),
             );
-
             if (shouldExit == true) {
               _timer?.cancel();
               _amplitudeTimer?.cancel();
@@ -250,7 +247,11 @@ class _RecordingScreenState extends State<RecordingScreen>
         ),
         title: Text(
           widget.topic,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: SafeArea(
@@ -258,48 +259,29 @@ class _RecordingScreenState extends State<RecordingScreen>
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 16),
 
-              // Topic display
-              Text(
-                widget.topic,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Expected Duration Info
+              // Duration badge
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppTheme.cardColor,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppTheme.accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
-                  ),
+                      color: AppTheme.accentColor.withOpacity(0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      color: AppTheme.primaryColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
+                    Icon(Icons.timer_outlined,
+                        color: AppTheme.accentColor, size: 16),
+                    const SizedBox(width: 6),
                     Text(
                       'Expected: ${widget.expectedDuration}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(
+                          color: AppTheme.accentColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -315,39 +297,53 @@ class _RecordingScreenState extends State<RecordingScreen>
               // Timer Display
               Text(
                 _formatDuration(_recordDuration),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 56,
-                  fontWeight: FontWeight.w300,
-                  letterSpacing: 2,
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 64,
+                  fontWeight: FontWeight.w200,
+                  letterSpacing: 4,
                 ),
               ),
 
               const SizedBox(height: 8),
 
-              // Recording Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _isPaused ? Colors.orange : Colors.red,
-                      shape: BoxShape.circle,
+              // Status pill
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _isPaused
+                      ? AppTheme.warningColor.withOpacity(0.1)
+                      : AppTheme.errorColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _isPaused
+                            ? AppTheme.warningColor
+                            : AppTheme.errorColor,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isPaused ? 'PAUSED' : 'RECORDING',
-                    style: TextStyle(
-                      color: _isPaused ? Colors.orange : Colors.red,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 2,
+                    const SizedBox(width: 8),
+                    Text(
+                      _isPaused ? 'PAUSED' : 'RECORDING',
+                      style: TextStyle(
+                        color: _isPaused
+                            ? AppTheme.warningColor
+                            : AppTheme.errorColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const Spacer(),
@@ -356,19 +352,17 @@ class _RecordingScreenState extends State<RecordingScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Pause/Resume Button
                   _buildControlButton(
                     icon: _isPaused ? Icons.play_arrow : Icons.pause,
                     label: _isPaused ? 'Resume' : 'Pause',
-                    color: Colors.orange,
-                    onPressed: _isPaused ? _resumeRecording : _pauseRecording,
+                    color: AppTheme.warningColor,
+                    onPressed:
+                    _isPaused ? _resumeRecording : _pauseRecording,
                   ),
-
-                  // Stop Button
                   _buildControlButton(
                     icon: Icons.stop,
                     label: 'Stop',
-                    color: Colors.red,
+                    color: AppTheme.errorColor,
                     onPressed: _stopRecording,
                     isLarge: true,
                   ),
@@ -384,46 +378,80 @@ class _RecordingScreenState extends State<RecordingScreen>
   }
 
   Widget _buildRecordingVisualization() {
-    return ScaleTransition(
-      scale: _animation,
-      child: Container(
-        width: 200,
-        height: 200,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              AppTheme.primaryColor.withOpacity(0.3),
-              AppTheme.primaryColor.withOpacity(0.1),
-              Colors.transparent,
-            ],
-          ),
-        ),
-        child: Center(
+    return Column(
+      children: [
+        ScaleTransition(
+          scale: _animation,
           child: Container(
-            width: 150,
-            height: 150,
+            width: 180,
+            height: 180,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.primaryColor,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.5),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
+              gradient: RadialGradient(
+                colors: [
+                  AppTheme.accentColor.withOpacity(0.2),
+                  AppTheme.accentColor.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+              ),
             ),
             child: Center(
-              child: Icon(
-                Icons.mic,
-                size: 80,
-                color: Colors.white,
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: _isPaused
+                      ? LinearGradient(colors: [
+                    AppTheme.warningColor,
+                    AppTheme.warningColor.withOpacity(0.8)
+                  ])
+                      : AppTheme.primaryGradient,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_isPaused
+                          ? AppTheme.warningColor
+                          : AppTheme.accentColor)
+                          .withOpacity(0.4),
+                      blurRadius: 30,
+                      spreadRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _isPaused ? Icons.pause : Icons.mic,
+                  size: 60,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
         ),
-      ),
+        const SizedBox(height: 20),
+        // Live amplitude bars
+        SizedBox(
+          height: 40,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(24, (i) {
+              final h = _isPaused
+                  ? 4.0
+                  : (4.0 + _currentAmplitude * 36 * (0.4 + (i % 4) * 0.2));
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 100),
+                width: 3,
+                height: h.clamp(4.0, 40.0),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 
@@ -469,9 +497,9 @@ class _RecordingScreenState extends State<RecordingScreen>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white70,
+            color: AppTheme.textSecondary,
             fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
