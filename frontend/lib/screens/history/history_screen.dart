@@ -421,7 +421,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             if (!hasSearch) ...[
               const SizedBox(height: 32),
               ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => _showRecordingSetupDialog(),
                 icon: const Icon(Icons.mic),
                 label: const Text('Start Recording'),
                 style: ElevatedButton.styleFrom(
@@ -516,7 +516,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       child: Text(
                         score.toStringAsFixed(0),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -623,5 +623,116 @@ class _HistoryScreenState extends State<HistoryScreen> {
     } else {
       return '${secs}s';
     }
+  }
+
+  void _showRecordingSetupDialog() {
+    final topicController = TextEditingController();
+    String selectedDuration = '5-7 minutes';
+
+    final durations = [
+      '1-2 minutes', '3-5 minutes', '5-7 minutes',
+      '7-10 minutes', '10-15 minutes',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'New Recording',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Speech Topic',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppTheme.textSecondary)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: topicController,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Climate Change, Leadership...',
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300)),
+                ),
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              Text('Expected Duration',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppTheme.textSecondary)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedDuration,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300)),
+                ),
+                items: durations.map((d) => DropdownMenuItem(
+                    value: d, child: Text(d))).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setDialogState(() => selectedDuration = val);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text('Cancel',
+                  style: TextStyle(color: AppTheme.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final topic = topicController.text.trim();
+                Navigator.pop(dialogContext);
+                Navigator.pushNamed(
+                  context,
+                  '/recording',
+                  arguments: {
+                    'topic': topic.isEmpty ? 'General Speech' : topic,
+                    'expectedDuration': selectedDuration,
+                  },
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Start Recording',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
