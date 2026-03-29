@@ -224,11 +224,12 @@ class SpeechAnalysisService:
                 
                 # Fluency Tab
                 "filler_word_count": filler_analysis.get('Total Filler Words', 0),
+                # Fix: pause data is in filler_analysis['mid_sentence_pauses'], not proficiency
                 "pause_count": sum([
-                    proficiency_analysis.get('pause_analysis', {}).get('Pauses under 1.5 seconds', 0),
-                    proficiency_analysis.get('pause_analysis', {}).get('Pauses between 1.5-3 seconds', 0),
-                    proficiency_analysis.get('pause_analysis', {}).get('Pauses exceeding 3 seconds', 0),
-                    proficiency_analysis.get('pause_analysis', {}).get('Pauses exceeding 5 seconds', 0)
+                    filler_analysis.get('mid_sentence_pauses', {}).get('Pauses under 1.5 seconds', 0),
+                    filler_analysis.get('mid_sentence_pauses', {}).get('Pauses between 1.5-3 seconds', 0),
+                    filler_analysis.get('mid_sentence_pauses', {}).get('Pauses exceeding 3 seconds', 0),
+                    filler_analysis.get('mid_sentence_pauses', {}).get('Pauses exceeding 5 seconds', 0),
                 ]),
                 "words_per_minute": self._calculate_wpm(transcription_result),
                 
@@ -515,6 +516,7 @@ class SpeechAnalysisService:
             wpm = int((word_count / duration) * 60)
 
             # Sanity check: normal speech is 80-350 WPM
+            
             if wpm < 50 or wpm > 400:
                 return 'N/A'
 
